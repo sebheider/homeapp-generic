@@ -115,7 +115,9 @@ Der Ordner `data` enthält Konfiguration, gespeicherte Zugangsdaten und weitere 
 Zugriff darauf beschränken und ihn regelmäßig sichern.
 
 Optional `.env.example` nach `.env` kopieren. Für diesen Startweg ändern `HOMEAPP_PORT` und `TZ`
-den Host-Port (Standard 8095) und die Zeitzone (Standard `Europe/Berlin`). `APP_USER` und
+den Host-Port (Standard 8095) und die Zeitzone (Standard `Europe/Berlin`). Läuft auf dem Host bereits
+eine HomeApp, zusätzlich Projektordner und Image-Name unterscheiden – siehe
+[Mehrere Installationen und Konflikte](#mehrere-installationen-und-konflikte). `APP_USER` und
 `APP_PASSWORD` gemeinsam setzen, um den Zugriff per HTTP Basic Auth zu schützen; sind beide
 Werte nicht gesetzt, ist die App nicht geschützt. Für externen Zugriff zusätzlich ein vertrauenswürdiges
 TLS-Zertifikat und geeigneten Netzwerkschutz einrichten; siehe [Sicherheit](#sicherheit) und
@@ -182,13 +184,17 @@ dafür **nichts installiert oder gebaut** werden.
 1. Den Inhalt des Repositories nach `/volume1/docker/HomeApp` bringen (Groß-/Kleinschreibung beachten):
    per `git clone https://github.com/sebheider/homeapp-generic.git HomeApp` oder über *GitHub → Code →
    Download ZIP*, entpacken und den Ordnerinhalt mit der *File Station* bzw. per SMB-Freigabe hochladen.
-   `data/` entsteht beim ersten Start.
-2. Optional: `.env.example` nach `.env` kopieren und Werte eintragen (siehe unten).
+   Der Ordner **`data/` muss dabei mit hochgeladen werden** (er ist im Repository leer enthalten) – der
+   Container Manager legt ihn nicht selbst an und bricht sonst mit einem Fehler zum fehlenden Pfad ab.
+   Fehlt er, in der *File Station* unter `/volume1/docker/HomeApp` einen Ordner `data` anlegen.
+2. Optional: `.env.example` nach `.env` kopieren und Werte eintragen (siehe unten). **Läuft auf der Synology
+   schon eine HomeApp oder ein anderes Projekt**, vorher Port, Containername und Netzwerk anpassen – siehe
+   [Mehrere Installationen und Konflikte](#mehrere-installationen-und-konflikte).
 3. **Container Manager → Projekt → Erstellen**
    - Pfad: `/volume1/docker/HomeApp`
    - die vorhandene `docker-compose.yml` wird erkannt → *Weiter* → *Fertig*
    - Der erste Build dauert einige Minuten (Internetzugriff für das Basis-Image `node:22-alpine`, die npm-Pakete sowie OpenSSL und ffmpeg).
-4. App öffnen: `https://<IP-der-Synology>:8095` (Browserwarnung beim selbstsignierten Zertifikat einmalig bestätigen; der Host-Port steht in der `docker-compose.yml` unter `ports`; auf der Synology ist 8080 häufig belegt – bei Bedarf links einfach eine andere Zahl eintragen)
+4. App öffnen: `https://<IP-der-Synology>:8095` (Browserwarnung beim selbstsignierten Zertifikat einmalig bestätigen). Den Host-Port änderst du mit `HOMEAPP_PORT` in der `.env` oder links unter `ports` in der `docker-compose.yml`; auf der Synology ist 8080 häufig belegt.
 
 ### Variante B – per SSH
 
@@ -202,6 +208,7 @@ Konfiguration und Verlaufsdaten liegen in `./data` (Volume `/data` im Container)
 **Update:** Neuen Stand holen (`git pull` bzw. neues ZIP über den Ordner kopieren – `data/` und `.env` bleiben erhalten), dann `docker compose up -d --build` (bzw. im Container Manager das Projekt neu erstellen).
 
 > **Bricht der Build mit „npm error Exit handler never called!“ ab?** Das passiert nur mit älteren Docker-Versionen mancher Synology-Modelle. Dann `Dockerfile.prebuilt` verwenden, das ohne npm im Container auskommt: in `docker-compose.yml` `build: .` durch `build: { context: ., dockerfile: Dockerfile.prebuilt }` ersetzen und die Dateien, die es kopiert, einmal auf einem PC erzeugen (Node.js 20.19+ auf 20.x oder 22.12+): in `server/` `npm ci --omit=dev`, in `client/` `npm ci && npm run build`. `server/node_modules/` und `client/dist/` dann mit auf die Synology kopieren. Ohne eigenen Build geht es auch mit dem fertigen Image ([Variante C](#variante-c--automatische-updates-aus-github-synology)).
+
 ### Variante C – Automatische Updates aus GitHub (Synology)
 
 Der Container Manager kann ein Git-Repository nicht selbst überwachen. Stattdessen übernimmt GitHub das Bauen und die Synology holt das fertige Image regelmäßig ab. Ein `git push` auf `main` reicht dann, kurz danach läuft die neue Version, **ohne Kopieren, ohne npm und ohne Build auf der Synology**.
@@ -230,7 +237,7 @@ werden; bis dahin den [Build aus Quellcode](#plattformunabhängiger-schnellstart
 
    Das Token steht **nur in dieser Datei**. Das Update-Skript meldet sich bei jedem Lauf in einem temporären Ordner an und löscht ihn danach wieder. Auf der Synology entsteht dadurch **kein `docker login`** (nichts in `/root/.docker`, kein `sudo`, kein SSH). Die `.env` wird nicht in den Container übernommen und nicht in Git eingecheckt (`.gitignore`).
    - *Alternativ ohne Token:* das Package auf GitHub unter *Package settings → Change visibility* auf „Public“ stellen und `GHCR_TOKEN` weglassen. Das Image enthält keine Zugangsdaten (die liegen nur in deinem `data`-Ordner), aber den gebauten Code der App.
-3. **Compose-Datei ersetzen:** In `/volume1/docker/HomeApp` den Inhalt von `docker-compose.yml` durch den Inhalt von `docker-compose.ghcr.yml` aus dem Repository ersetzen (der Container Manager erwartet den Namen `docker-compose.yml`). Mehr als diese Datei, eine optionale `.env` und der Ordner `data` brauchst du dort nicht. `client/` und `server/` können weg. Bei einem anderen GitHub-Konto in der `.env` `HOMEAPP_IMAGE=ghcr.io/<konto>/<repository>:latest` setzen.
+3. **Compose-Datei ersetzen:** In `/volume1/docker/HomeApp` den Inhalt von `docker-compose.yml` durch den Inhalt von `docker-compose.ghcr.yml` aus dem Repository ersetzen (der Container Manager erwartet den Namen `docker-compose.yml`). Mehr als diese Datei, eine optionale `.env` und der Ordner `data` brauchst du dort nicht – `data` muss existieren (bei Bedarf in der *File Station* anlegen). `client/` und `server/` können weg. Bei einem anderen GitHub-Konto in der `.env` `HOMEAPP_IMAGE=ghcr.io/<konto>/<repository>:latest` setzen. Port, Containername und Netzwerk ggf. wie unter [Mehrere Installationen und Konflikte](#mehrere-installationen-und-konflikte) anpassen.
 4. **Update-Aufgabe einrichten und einmal ausführen:** *DSM → Systemsteuerung → Aufgabenplaner → Erstellen → Geplante Aufgabe → Benutzerdefiniertes Skript*
    - *Allgemein:* Name `HomeApp Update`, Benutzer **root** (nur root darf Docker bedienen)
    - *Zeitplan:* täglich, *Zeit wiederholen:* **alle 5 Minuten**, Letzte Ausführungszeit: 23:55
@@ -268,7 +275,7 @@ werden; bis dahin den [Build aus Quellcode](#plattformunabhängiger-schnellstart
    Dann die Aufgabe in der Liste markieren und **Ausführen** wählen. Sie lädt das Image und schreibt „Image geladen …“ in `/volume1/docker/HomeApp/update.log`.
 5. **Projekt erstellen:** *Container Manager → Projekt → Erstellen*, Projektname **`homeapp`**, Pfad `/volume1/docker/HomeApp`, vorhandene `docker-compose.yml` verwenden. Das Image ist schon da, es wird nichts mehr geladen. Ein altes Projekt aus Variante A vorher löschen (*Aktion → Löschen*, der Ordner `data` bleibt erhalten).
 
-**Was das Skript tut:** Es lädt das Image und ersetzt den Container nur dann, wenn das Image wirklich neu ist **und** der Container schon existiert (Schritt 5). Danach entfernt es nur das alte HomeApp-Image, nichts anderes auf der Synology. Seine Meldungen stehen in `update.log`; dieselbe Fehlermeldung erscheint dort nicht ständig neu. Mit *Aktion → Ausgabeergebnisse anzeigen* in der Aufgabenliste siehst du die Ausgabe des letzten Laufs. Dein `data`-Ordner und damit alle Einstellungen bleiben bei jedem Update erhalten.
+**Was das Skript tut:** Es lädt das Image und ersetzt den Container nur dann, wenn das Image wirklich neu ist **und** der Container schon existiert (Schritt 5). Danach entfernt es nur das alte HomeApp-Image, nichts anderes auf der Synology. Seine Meldungen stehen in `update.log`; dieselbe Fehlermeldung erscheint dort nicht ständig neu. Mit *Aktion → Ausgabeergebnisse anzeigen* in der Aufgabenliste siehst du die Ausgabe des letzten Laufs. Dein `data`-Ordner und damit alle Einstellungen bleiben bei jedem Update erhalten. Hast du Projektordner, Projektnamen oder `container_name` geändert, im Skript entsprechend den Pfad hinter `cd`, den Namen in `docker container inspect homeapp` und den Projektnamen in `-p homeapp` anpassen.
 
 **Was lokal bleibt:** Alles liegt im Projektordner (`docker-compose.yml`, `.env` mit dem Token, `data/`, `update.log`). Außerhalb davon existiert nur die Aufgabe im Aufgabenplaner selbst, sie ist der Zeitgeber. Löschst du sie, stoppen die automatischen Updates, sonst ändert sich nichts.
 
@@ -283,8 +290,27 @@ Die `docker-compose.yml` legt ein eigenes Netzwerk `homeapp_net` (`172.40.0.0/24
 - Erreichbar ist diese Adresse **von der Synology selbst und von anderen Containern im selben Netzwerk**, z. B. `https://172.40.0.10:8080` (Container-Port, nicht 8095).
 - Aus dem restlichen LAN bleibt die App wie gewohnt unter `https://<IP-der-Synology>:8095` erreichbar. `172.40.0.0/24` ist ein internes Docker-Netz und wird nicht ins LAN geroutet. Soll der Container eine **eigene LAN-Adresse** bekommen, braucht es stattdessen ein `macvlan`-Netzwerk mit einer freien IP deines LAN-Subnetzes.
 - Die Webhook-URL für die Surveillance Station kann `https://172.40.0.10:8080/api/webhook/…` oder `https://<IP-der-Synology>:8095/api/webhook/…` lauten.
-- Existiert das Netzwerk `172.40.0.0/24` schon (z. B. von einem anderen Projekt), gib in der Compose-Datei stattdessen `external: true` mit dem Namen des vorhandenen Netzwerks an (Beispiel steht als Kommentar in der Datei). Beim Start meldet Docker sonst „Pool overlaps with other one on this address space“.
+- Existiert das Netzwerk `172.40.0.0/24` schon (z. B. von einem anderen Projekt oder einer zweiten HomeApp), meldet Docker „Pool overlaps with other one on this address space“. Dann entweder ein freies Subnetz wählen und `subnet`, `gateway` und `ipv4_address` gemeinsam ändern (z. B. `172.41.0.0/24`, `172.41.0.1`, `172.41.0.10`) oder in der Compose-Datei `external: true` mit dem Namen des vorhandenen Netzwerks angeben (Beispiel steht als Kommentar in der Datei).
 - Ist die **DSM-Firewall** aktiv, muss Verkehr aus `172.40.0.0/24` zur Synology erlaubt sein (Systemsteuerung → Sicherheit → Firewall), damit die App ioBroker und die Surveillance Station auf der Synology erreicht.
+
+### Mehrere Installationen und Konflikte
+
+Läuft auf dem Host bereits eine HomeApp (z. B. das ursprüngliche Projekt) oder ein anderes Projekt mit
+denselben Werten, startet der Container nicht. Folgende Werte müssen je Installation eindeutig sein:
+
+| Was | Wo anpassen | Meldung bei Konflikt |
+|-----|-------------|----------------------|
+| Projektordner / Projektname | eigener Ordner je Installation, z. B. `/volume1/docker/HomeApp-generic`, und eigener Projektname im Container Manager (per SSH: `docker compose -p <name> …`) | das bestehende Projekt wird ersetzt bzw. „Projekt existiert bereits“ |
+| Host-Port | `HOMEAPP_PORT` in der `.env` (alle Compose-Dateien) oder links unter `ports` in der Compose-Datei | „port is already allocated“ / „Bind for 0.0.0.0:8095 failed“ |
+| Containername | `container_name` in `docker-compose.yml` bzw. `docker-compose.ghcr.yml` (die generische Datei vergibt ihn automatisch) | „The container name "/homeapp" is already in use“ |
+| Netzwerk | `subnet`, `gateway` und `ipv4_address` gemeinsam unter `networks` in `docker-compose.yml` bzw. `docker-compose.ghcr.yml`, oder ein vorhandenes Netz mit `external: true` ([Details](#feste-ip-adresse-des-containers-nur-synology-legacy-compose)) | „Pool overlaps with other one on this address space“ |
+| Image-Name | `image` in `docker-compose.yml` bzw. `docker-compose.generic.yml` (Standard `homeapp:latest`) | keine – ein Build überschreibt sonst das Image der anderen Installation |
+| Datenordner | jede Installation mit eigenem `data`-Ordner; nie zwei Container auf denselben Ordner | – |
+
+Nach einer Änderung an Compose-Datei oder `.env` das Projekt neu erstellen (`docker compose up -d --build`
+bzw. im Container Manager *Erstellen*). Bei automatischen Updates aus GitHub
+([Variante C](#variante-c--automatische-updates-aus-github-synology)) Ordner, Containername und
+Projektname auch im Update-Skript anpassen.
 
 > Tipp: Wenn die App von außen erreichbar sein soll, nutze den Reverse Proxy der Synology (*Systemsteuerung → Anmeldeportal → Erweitert → Reverse Proxy*) mit HTTPS und setze zusätzlich `APP_USER` / `APP_PASSWORD`. WebSocket-Header (`Upgrade`, `Connection`) müssen im Reverse Proxy durchgereicht werden (*Benutzerdefinierter Header → WebSocket*).
 
@@ -849,7 +875,7 @@ Eine Änderung der `.env` wirkt erst, wenn das Projekt neu erstellt wird (ein Ne
 | `SS_ACCOUNT`, `SS_PASSWORD`, `SS_VERIFY_SSL` | Anmeldung / Zertifikatsprüfung |
 | `SS_DEVICE_ID` | Geräte-Token von DSM (2FA), normalerweise nicht nötig – die App speichert es selbst |
 | `TZ` | Zeitzone, z. B. `Europe/Berlin` |
-| `HOMEAPP_PORT` | Host-Port für `docker-compose.generic.yml` (Standard `8095`) |
+| `HOMEAPP_PORT` | Host-Port aller Compose-Dateien (Standard `8095`) |
 
 ---
 
@@ -1108,6 +1134,8 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | Externes Modul lässt sich nicht installieren | Die Meldung nennt das fehlerhafte Feld bzw. die Datei; Ursachen und Lösungen stehen in [docs/MODULES.md](./docs/MODULES.md#fehlermeldungen). Ein Modul mit einer `module.json` im JSON-Schema-fähigen Editor (`"$schema"`) zu schreiben, zeigt Fehler schon vorher. |
 | Externes Modul erscheint nicht in der Navigation / im Widget-Katalog | Unter *Einstellungen → Module* aktivieren und **Speichern**. Nur Module mit `page` bekommen eine Seite, nur Module mit `widget` ein Widget. |
 | Externes Modul zeigt „nicht zugeordnet“ / „Noch nicht eingerichtet“ | Datenpunkte des Moduls unter *Einstellungen → Module* zuordnen und speichern. |
+| Projekt startet nicht: Pfad `…/data` existiert nicht („bind mount“, „does not exist“) | Der Container Manager legt den Datenordner nicht selbst an. Im Projektordner einen Ordner `data` anlegen (File Station) und das Projekt erneut erstellen. Im Repository ist er leer enthalten – beim Hochladen mitkopieren. |
+| „port is already allocated“, „container name … already in use“ oder „Pool overlaps …“ | Auf dem Host läuft bereits eine HomeApp oder ein anderes Projekt mit demselben Port, Containernamen oder Netz: siehe [Mehrere Installationen und Konflikte](#mehrere-installationen-und-konflikte). |
 | Build bricht mit „npm error Exit handler never called!“ ab | Das `Dockerfile` führt `npm ci` im Build aus; ältere Docker-Versionen mancher Synology-Modelle brechen dabei ab. Dann `Dockerfile.prebuilt` verwenden (ohne npm im Container, `server/node_modules/` und `client/dist/` vorher auf einem PC erzeugen) – siehe [Variante B](#variante-b--per-ssh) – oder das fertige Image aus [Variante C](#variante-c--automatische-updates-aus-github-synology). |
 | „Kameras leer“ | Surveillance-Station-Verbindung unter *Einstellungen* prüfen; das Konto braucht das Recht „Live-Ansicht“ (bei 2FA siehe unten). |
 | „DSM verlangt … 2-Faktor-Anmeldung … noch nicht eingerichtet“ (Code 406) | Für das Konto ist 2FA vorgeschrieben, aber noch nicht eingerichtet. In DSM unter *Persönlich → Konto* die 2-Faktor-Authentifizierung einrichten und danach den ersten Code in der App eintragen ([Anleitung](#konto-mit-2-faktor-anmeldung-2fa)) – oder die Pflicht in *Systemsteuerung → Sicherheit → Konto* aufheben. |
