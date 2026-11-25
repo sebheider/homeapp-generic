@@ -6,6 +6,19 @@ einschließlich Synology. Ohne Verbindung ist der Demo-Modus nutzbar. Home Assis
 derzeit Entity-Zuordnungen und ausgewählte Steuerbefehle; die vollständige Geräteabdeckung von
 ioBroker ist dort noch nicht verfügbar.
 
+## Screenshots
+
+Die folgenden Aufnahmen zeigen die App im Demo-Modus mit simulierten Daten.
+
+<p align="center">
+  <img src="./docs/screenshots/overview.png" alt="HomeApp-Übersicht im Demo-Modus" width="49%">
+  <img src="./docs/screenshots/energy.png" alt="Energiefluss und Verbrauch" width="49%">
+</p>
+<p align="center">
+  <img src="./docs/screenshots/weather.png" alt="Wetterübersicht mit Prognose" width="49%">
+  <img src="./docs/screenshots/rooms.png" alt="Raumübersicht mit Licht, Heizung und Rollladen" width="49%">
+</p>
+
 ## Herkunft und Entwicklung
 
 HomeApp Generic basiert auf [HomeApp von Sebastian Heider](https://github.com/sebheider/homeapp).
