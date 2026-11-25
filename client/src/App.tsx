@@ -16,7 +16,7 @@ import { CameraPopupPauseBanner, CameraViewer, MotionPopup } from './components/
 import { PrinterPopup } from './components/Printer';
 import { AlertBanner, NotificationCenter } from './components/Notifications';
 import { ChangelogDialog } from './components/Changelog';
-import { BottomNav, Dock, Launcher, MenuHandle, MenuOverlay, MobileHeader, PAGE_TONES, PagePosition, Sidebar, TopBar, hasPrinter, hasRadar, hasSpotify, navItems } from './components/Navigation';
+import { BottomNav, Dock, Launcher, MenuHandle, MenuOverlay, MobileHeader, PagePosition, Sidebar, TopBar, hasPrinter, hasRadar, hasSpotify, navItems, pageTone } from './components/Navigation';
 import { DisplayEffects, usePixelShift } from './components/DisplayEffects';
 import { ScreensaverGate } from './components/Screensaver';
 import { Loading, StaticVisualsContext } from './components/ui';
@@ -24,6 +24,7 @@ import { FpsMeter } from './components/FpsMeter';
 import { fpsRequested } from './lib/perf';
 import { daypart, type Daypart } from './lib/ambience';
 import { useWeatherData } from './lib/weather';
+import { extensionIdOf } from './lib/extensions';
 import { RoomsView } from './views/Rooms';
 import { LightsView } from './views/Lights';
 import { ClimateView } from './views/Climate';
@@ -38,11 +39,12 @@ const PrinterView = lazy(() => import('./views/Printer').then((m) => ({ default:
 const SpotifyView = lazy(() => import('./views/Spotify').then((m) => ({ default: m.SpotifyView })));
 const RadarView = lazy(() => import('./views/Radar').then((m) => ({ default: m.RadarView })));
 const MowerView = lazy(() => import('./views/Mower').then((m) => ({ default: m.MowerView })));
+const ExtensionPage = lazy(() => import('./components/Extension').then((m) => ({ default: m.ExtensionPage })));
 
 /** Navigation of the current store state (swipe gestures). */
 const currentNav = () => {
   const s = useStore.getState();
-  return navItems(s.config, hasPrinter(s), hasSpotify(s), hasRadar(s));
+  return navItems(s.config, hasPrinter(s), hasSpotify(s), hasRadar(s), s.extensions);
 };
 
 /** Swipe left / right: next / previous page of the navigation (not past the first / last page, not from the settings). */
@@ -77,7 +79,7 @@ function SlidingPage({ view, kioskHome, transition, gestureRef }: { view: View; 
   });
   return (
     <motion.div
-      className={view === 'home' ? (kioskHome ? 'h-full min-h-0' : undefined) : `page-hud tone-${PAGE_TONES[view]}`}
+      className={view === 'home' ? (kioskHome ? 'h-full min-h-0' : undefined) : `page-hud tone-${pageTone(view)}`}
       style={{ position: 'relative', gridArea: '1 / 1', minWidth: 0, left }}
       inert={!present}
       custom={transition}
@@ -154,8 +156,10 @@ function Toasts({ raised }: { raised: boolean }) {
 /** Component of the current view. */
 function Page({ view }: { view: View }) {
   const modules = useStore((s) => s.config?.modules);
+  const extension = extensionIdOf(view);
+  if (extension) return <ExtensionPage id={extension} />;
   if ((view === 'weather' || view === 'printer' || view === 'spotify' || view === 'mower') && modules?.[view] === false) {
-    return <div className="glass p-6">Dieses Modul ist deaktiviert. Es kann unter Einstellungen → Module aktiviert werden.</div>;
+    return <div className="glass p-6">Dieses integrierte Modul ist deaktiviert. Es kann unter Einstellungen → Module wieder aktiviert werden.</div>;
   }
   switch (view) {
     case 'home': return <Dashboard />;
@@ -187,7 +191,7 @@ function DemoBanner() {
   return (
     <div className="mx-4 md:mx-8 mt-2 text-xs rounded-xl pl-3 pr-1 py-1 bg-violet-500/15 border border-violet-400/30 flex items-center gap-2" style={{ color: 'color-mix(in srgb, #a78bfa 55%, var(--fg))' }}>
       <Info size={14} className="shrink-0" />
-      <span className="flex-1 min-w-0">Demo-Modus: simulierte Daten. Unter Einstellungen → Verbindung mit ioBroker verbinden.</span>
+      <span className="flex-1 min-w-0">Demo-Modus: simulierte Daten. Unter Einstellungen → Verbindungen mit ioBroker oder Home Assistant verbinden.</span>
       <button className="grid place-items-center w-9 h-9 shrink-0 rounded-lg hover:bg-violet-500/20" onClick={hide} aria-label="Hinweis ausblenden" title="Hinweis ausblenden">
         <X size={14} />
       </button>
@@ -233,6 +237,7 @@ export default function App() {
   const printer = useStore(hasPrinter);
   const spotify = useStore(hasSpotify);
   const radar = useStore(hasRadar);
+  const extensions = useStore((s) => s.extensions);
   const pinned = useStore((s) => s.display.menuPinned);
   const shell = useNavShell();
   const kiosk = useStore((s) => s.display.kiosk);
@@ -249,7 +254,7 @@ export default function App() {
   const effects = useStore((s) => s.display.effects);
   // "low" animation details: page changes and entrance animations as with reduced motion
   const reduced = useMedia('(prefers-reduced-motion: reduce)') || effects === 'low';
-  const nav = navItems(config, printer, spotify, radar);
+  const nav = navItems(config, printer, spotify, radar, extensions);
   const [navigation, setNavigation] = useState({ view, direction: 0 });
   const direction = navigation.view === view ? navigation.direction : navigationDirection(nav, navigation.view, view);
   if (navigation.view !== view) setNavigation({ view, direction });

@@ -16,10 +16,11 @@
  */
 import { useContext, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import {
-  Activity, AirVent, Camera, Clock3, CloudSun, DoorOpen, Gauge, GripVertical, House, LayoutDashboard, LayoutTemplate, Lightbulb, MoveDiagonal2, Music, Pencil, Plus, Power, Printer3d, Save,
+  Activity, AirVent, Camera, Clock3, CloudSun, DoorOpen, Gauge, GripVertical, House, LayoutDashboard, LayoutTemplate, Lightbulb, MoveDiagonal2, Music, Pencil, Plus, Power, Printer3d, Puzzle, Save,
   Recycle, Settings2, Shield, Sparkles, ToggleRight, Trash2, Type, Umbrella, Wind, X, Zap, type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../lib/store';
+import { activeExtensions } from '../lib/extensions';
 import { useKioskLayout, useKioskScale, useMedia } from '../lib/display';
 import { useElementSize } from '../lib/hooks';
 import { greeting, num, power } from '../lib/format';
@@ -28,7 +29,7 @@ import { switchAllOff } from '../lib/selectors';
 import { useOverview, type Overview } from '../lib/overview';
 import {
   GRID_COLS, MAX_HEIGHT, MAX_WIDGETS, WIDGETS, WIDGET_PARTS, WIDGET_TYPES, addWidget, gridRows, normalizeDashboard, placeWidget, readingOrder, scalesContent,
-  templateWidgets, widgetPart, type GridRect, type Widget, type WidgetOptions, type WidgetType,
+  templateWidgets, widgetPart, type GridRect, type Widget, type WidgetOptions, type WidgetPart, type WidgetType,
 } from '../lib/widgets';
 import { BatteryBar, IDLE_W, useEnergy, useEnergySeries, type EnergyValues } from '../components/Energy';
 import { DeviceCardSized } from '../components/DeviceCards';
@@ -40,6 +41,7 @@ import { SpotifyPanel, useSpotifyOnDashboard } from '../components/Spotify';
 import { WastePanel } from '../components/Waste';
 import { VentilationPanel } from '../components/Ventilation';
 import { KioskSensorsPanel } from '../components/KioskSensors';
+import { ExtensionWidgetBody } from '../components/Extension';
 import { Empty, Modal } from '../components/ui';
 import { Field, NumInput, Switch } from './settings/shared';
 import {
@@ -55,7 +57,7 @@ const EDIT_SPARE_ROWS = 4;
 const ICONS: Record<WidgetType, LucideIcon> = {
   clock: Clock3, status: House, weather: CloudSun, weatherPart: Umbrella, gauge: Gauge, energy: Zap, energyPart: Activity, security: Shield, camera: Camera,
   rooms: LayoutDashboard, room: DoorOpen, scenes: Sparkles, lights: Lightbulb, devices: ToggleRight, text: Type, printer: Printer3d, spotify: Music,
-  waste: Recycle, ventilation: AirVent, kiosk: Wind,
+  waste: Recycle, ventilation: AirVent, kiosk: Wind, extension: Puzzle,
 };
 
 /** Smallest row height (px) at which the kiosk layout still squeezes all rows onto the screen; otherwise it scrolls. */
@@ -66,9 +68,12 @@ const BASE_FIT_GAP = 12;
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
 
-/** Name of a widget in the editor: the chosen part (gauge, weather or energy detail) or the own title, otherwise the name of the widget type. */
+/** Name of a widget in the editor: the chosen part (gauge, weather or energy detail), the own title or the module name, otherwise the name of the widget type. */
 const widgetLabel = (w: Widget) =>
-  widgetPart(w)?.label || ((w.type === 'devices' || w.type === 'text') && str(w.options.title)) || WIDGETS[w.type].label;
+  widgetPart(w)?.label
+  || ((w.type === 'devices' || w.type === 'text') && str(w.options.title))
+  || (w.type === 'extension' && useStore.getState().extensions.find((m) => m.id === str(w.options.extension))?.name)
+  || WIDGETS[w.type].label;
 
 /** Light and switch tiles in the chosen size; with `small` the small tiles come first in their own denser grid. */
 function DeviceGrid({ devices, small }: { devices: Device[]; small: boolean }) {
@@ -300,7 +305,20 @@ function WidgetView({ w, o, energy }: { w: Widget; o: Overview; energy: EnergyVa
       return <VentilationPanel />;
     case 'kiosk':
       return <KioskSensorsPanel showEmpty />;
+    case 'extension':
+      return <ExtensionWidget w={w} />;
   }
+}
+
+/** Widget of an external module: its cards or its own page in the sandbox. */
+function ExtensionWidget({ w }: { w: Widget }) {
+  const id = str(w.options.extension);
+  const manifest = useStore((s) => s.extensions.find((m) => m.id === id));
+  return (
+    <HudPanel title={manifest?.name ?? WIDGETS.extension.label} color={C.violet} bodyClassName={manifest?.widget?.entry ? 'flex flex-col' : ''}>
+      <ExtensionWidgetBody id={id} note={(text) => <div className="flex items-center gap-2 text-sm text-muted"><Puzzle size={16} className="shrink-0" /> {text}</div>} />
+    </HudPanel>
+  );
 }
 
 /** Mini player while music plays; otherwise the cell stays empty (a hint while editing, so it can be placed). */
@@ -315,16 +333,20 @@ function SpotifyWidget() {
 
 /**
  * Catalogue of the widgets; a click adds one at the first free place. Widgets with parts (gauges,
- * weather and energy details) also list their parts, so a single part can be added directly.
+ * weather and energy details) also list their parts, so a single part can be added directly; the
+ * entry "Externes Modul" lists the enabled external modules that bring a widget.
  */
-function AddDialog({ open, onClose, onAdd, full }: { open: boolean; onClose: () => void; onAdd: (type: WidgetType, options?: WidgetOptions) => void; full: boolean }) {
+function AddDialog({ open, onClose, onAdd, full }: { open: boolean; onClose: () => void; onAdd: (type: WidgetType, options?: WidgetOptions, size?: [number, number]) => void; full: boolean }) {
+  const modules = useWidgetModules();
   return (
     <Modal open={open} onClose={onClose} title="Widget hinzufügen" wide>
       {full && <p className="text-sm text-rose-400 mb-3">Die Startseite hat bereits {MAX_WIDGETS} Widgets.</p>}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {WIDGET_TYPES.map((t) => {
+        {WIDGET_TYPES.filter((t) => t !== 'extension' || modules.length > 0).map((t) => {
           const I = ICONS[t];
-          const parts = WIDGET_PARTS[t];
+          const parts: { option: string; label: string; parts: readonly WidgetPart[] } | undefined = t === 'extension'
+            ? { option: 'extension', label: 'Modul', parts: modules.map((m) => ({ id: m.id, label: m.name, size: m.widget?.size ?? WIDGETS.extension.size })) }
+            : WIDGET_PARTS[t];
           return (
             <div key={t} className={`rounded-2xl border border-line hover:border-violet-400/50 transition ${parts ? 'sm:col-span-2 lg:col-span-3' : ''}`}>
               <button className="w-full text-left p-3 flex gap-3 disabled:opacity-50" disabled={full} onClick={() => onAdd(t)}>
@@ -337,7 +359,7 @@ function AddDialog({ open, onClose, onAdd, full }: { open: boolean; onClose: () 
               {parts && (
                 <div className="flex flex-wrap gap-1.5 px-3 pb-3 -mt-1" role="group" aria-label={`${WIDGETS[t].label}: direkt hinzufügen`}>
                   {parts.parts.map((p) => (
-                    <button key={p.id} className="chip !text-xs disabled:opacity-50" disabled={full} onClick={() => onAdd(t, { [parts.option]: p.id })}>
+                    <button key={p.id} className="chip !text-xs disabled:opacity-50" disabled={full} onClick={() => onAdd(t, { [parts.option]: p.id }, t === 'extension' ? p.size : undefined)}>
                       <Plus size={12} /> {p.label}
                     </button>
                   ))}
@@ -351,11 +373,19 @@ function AddDialog({ open, onClose, onAdd, full }: { open: boolean; onClose: () 
   );
 }
 
+/** Enabled external modules that bring a widget for the start page. */
+function useWidgetModules() {
+  const extensions = useStore((s) => s.extensions);
+  const all = useStore((s) => s.config?.extensions);
+  return useMemo(() => activeExtensions(extensions, all).filter((m) => m.widget), [extensions, all]);
+}
+
 /** Settings of one widget: its own options plus exact position and size. */
 function WidgetSettings({ w, o, onChange, onPlace, onClose }: {
   w: Widget; o: Overview; onChange: (options: WidgetOptions) => void; onPlace: (r: GridRect) => void; onClose: () => void;
 }) {
   const cameras = useStore((s) => s.cameras);
+  const modules = useWidgetModules();
   const setOpt = (p: WidgetOptions) => onChange({ ...w.options, ...p });
   const [minW, minH] = WIDGETS[w.type].min;
   const parts = WIDGET_PARTS[w.type];
@@ -392,6 +422,15 @@ function WidgetSettings({ w, o, onChange, onPlace, onClose }: {
             <select className="field" value={str(w.options.room) || o.rooms[0]?.room.id || ''} onChange={(e) => setOpt({ room: e.target.value })}>
               {o.rooms.length === 0 && <option value="">Keine Räume vorhanden</option>}
               {o.rooms.map((r) => <option key={r.room.id} value={r.room.id}>{r.room.name}</option>)}
+            </select>
+          </Field>
+        )}
+        {w.type === 'extension' && (
+          <Field label="Externes Modul" hint="Nur aktivierte Module mit Widget (Einstellungen → Module).">
+            <select className="field" value={str(w.options.extension)} onChange={(e) => setOpt({ extension: e.target.value })}>
+              <option value="">– bitte wählen –</option>
+              {str(w.options.extension) && !modules.some((m) => m.id === str(w.options.extension)) && <option value={str(w.options.extension)}>{str(w.options.extension)} (nicht verfügbar)</option>}
+              {modules.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </Field>
         )}
@@ -562,12 +601,12 @@ export function CustomDashboard({ fill = false }: { fill?: boolean }) {
     if (moved) announce(describe(moved));
   };
 
-  const add = (type: WidgetType, options?: WidgetOptions) => {
-    const next = addWidget(widgets, type, options);
+  const add = (type: WidgetType, options?: WidgetOptions, size?: [number, number]) => {
+    const next = addWidget(widgets, type, options, size);
     update(next);
     setAdding(false);
     // widgets that need a choice open their settings right away (unless a part was already chosen)
-    if (!options && (type === 'devices' || type === 'camera' || type === 'room' || type === 'text' || WIDGET_PARTS[type])) setSettingsOf(next[next.length - 1].id);
+    if (!options && (type === 'devices' || type === 'camera' || type === 'room' || type === 'text' || type === 'extension' || WIDGET_PARTS[type])) setSettingsOf(next[next.length - 1].id);
   };
   const finish = async () => {
     setSaving(true);

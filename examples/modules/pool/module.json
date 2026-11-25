@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../docs/module.schema.json",
+  "manifestVersion": 1,
+  "id": "pool",
+  "name": "Pool",
+  "version": "1.0.0",
+  "description": "Wassertemperatur, Filterpumpe, Solltemperatur der Heizung und Rückspülung – nur mit fertigen Kacheln, ganz ohne eigenen Code.",
+  "author": "HomeApp-Beispiel",
+  "icon": "waves",
+  "settings": [
+    { "key": "water", "type": "datapoint", "label": "Wassertemperatur", "required": true },
+    { "key": "pump", "type": "datapoint", "label": "Filterpumpe", "write": true, "required": true },
+    { "key": "target", "type": "datapoint", "label": "Solltemperatur Heizung", "write": true },
+    { "key": "backwash", "type": "datapoint", "label": "Rückspülung", "description": "Taster-Datenpunkt, der beim Schreiben von true die Rückspülung startet.", "write": true }
+  ],
+  "page": {
+    "title": "Pool",
+    "cards": [
+      { "type": "value", "label": "Wasser", "datapoint": "water", "unit": "°C", "decimals": 1 },
+      { "type": "switch", "label": "Filterpumpe", "datapoint": "pump" },
+      { "type": "slider", "label": "Solltemperatur", "datapoint": "target", "min": 20, "max": 32, "step": 0.5, "unit": "°C" },
+      { "type": "button", "label": "Rückspülung starten", "datapoint": "backwash", "value": true, "confirm": "Rückspülung jetzt starten?" },
+      { "type": "text", "label": "Hinweis", "text": "Dieses Modul besteht nur aus einer module.json. Die Datenpunkte ordnest du unter Einstellungen → Module zu." }
+    ]
+  },
+  "widget": {
+    "size": [3, 3],
+    "cards": [
+      { "type": "value", "label": "Wasser", "datapoint": "water", "unit": "°C", "decimals": 1 },
+      { "type": "switch", "label": "Pumpe", "datapoint": "pump" }
+    ]
+  }
+}

@@ -34,6 +34,7 @@ export function registerApiRoutes(app, {
   ventilation = null,
   allAlerts = () => alerts.list(),
   pushover = null,
+  extensionManifests = () => [],
 }) {
   for (const id of ['weather', 'printer', 'spotify']) {
     app.use(`/api/${id}`, (_req, res, next) => {
@@ -57,6 +58,7 @@ export function registerApiRoutes(app, {
       spotify: spotify.current(),
       waste: waste?.data() ?? null,
       ventilation: ventilation?.data() ?? null,
+      extensions: extensionManifests(),
     });
   });
 

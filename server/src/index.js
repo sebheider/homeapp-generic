@@ -9,7 +9,7 @@
  *   5. receives the sensors of the wall displays (Raspberry Pi kiosk agent), reads the waste collection
  *      calendar and computes the ventilation advice,
  *   6. sends push notifications to phones via Pushover (notifications, waste, ventilation, printer, cameras),
- *   7. serves the built React frontend,
+ *   7. serves the built React frontend and the files of installed external modules (see extensions.js),
  *   8. pushes live changes to every open browser over a WebSocket (/ws).
  *
  * Credentials never reach the browser: the frontend only talks to this server.
@@ -36,7 +36,7 @@ import { discover } from './discovery.js';
 import { kindPopupAllowed } from './popup-rules.js';
 import { buildFixScript, controlIds } from './permissions.js';
 import { WeatherService, demoForecast, validCoords } from './weather.js';
-import { basicAuth, safeEqual } from './auth.js';
+import { basicAuth, blockForeignWrites, foreignRequest, safeEqual } from './auth.js';
 import { buildCameraList } from './cameras.js';
 import { AlertMonitor, jsonFileStore, sanitizeAlerts } from './alerts.js';
 import { PrinterService } from './octoprint.js';
@@ -47,6 +47,7 @@ import { KIOSK_PREFIX, KioskHub, demoKioskReport, demoRadarFrame, freshAlerts, i
 import { WasteService } from './waste.js';
 import { VentilationService } from './ventilation.js';
 import { AlertTracker, PrintProgressTimer, PushoverService, alertEvent, printerMessage, printerProgressMessage } from './pushover.js';
+import { ExtensionRegistry, registerExtensionRoutes } from './extensions.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,10 @@ const DEMO_RADAR_MS = 250; // live frames of the simulated radar (like a real ag
 
 const authorized = basicAuth(AUTH_USER, AUTH_PASS);
 const store = new ConfigStore(); // persisted configuration (+ environment overrides)
+// external modules installed through the settings page (MODULES_DIR, default <DATA_DIR>/modules)
+const extensions = new ExtensionRegistry({ dir: path.resolve(process.env.MODULES_DIR || path.join(DATA_DIR, 'modules')) }).load();
+store.setExtensions(extensions);
+for (const item of extensions.list()) if (item.error) console.error(`Externes Modul "${item.id}" ist fehlerhaft: ${item.error}`);
 const iobroker = new IoBrokerSource(); // real ioBroker connection
 const homeassistant = new HomeAssistantSource();
 const demo = new DemoSource(); // simulated installation for demo mode
@@ -350,10 +355,15 @@ app.use((req, res, next) => {
   if (authorized(req.headers.authorization)) return next();
   res.set('WWW-Authenticate', 'Basic realm="HomeApp", charset="UTF-8"').status(401).send('Anmeldung erforderlich');
 });
+// other web sites and the sandboxed pages of external modules must not change anything
+app.use(blockForeignWrites);
+
+registerExtensionRoutes(app, { registry: extensions, onChange: () => store.extensionsChanged() });
 
 registerApiRoutes(app, {
   store,
   getSource: () => source,
+  extensionManifests: () => extensions.manifests(),
   demo,
   history,
   weather,
@@ -395,7 +405,7 @@ if (fs.existsSync(PUBLIC_DIR)) {
 const server = createServer(app, { dataDir: DATA_DIR });
 // WebSocket upgrade: same authentication as the REST API, only on the /ws path.
 server.on('upgrade', (req, socket, head) => {
-  if (!req.url?.startsWith('/ws') || !authorized(req.headers.authorization)) {
+  if (!req.url?.startsWith('/ws') || !authorized(req.headers.authorization) || foreignRequest(req.headers)) {
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     return socket.destroy();
   }

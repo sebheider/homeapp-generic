@@ -4,7 +4,8 @@ Moderne Smart-Home-Oberfläche mit **ioBroker** oder **Home Assistant** und opti
 Läuft als einzelner Container (React-Frontend + Node.js-Server) auf Systemen mit Docker Compose,
 einschließlich Synology. Ohne Verbindung ist der Demo-Modus nutzbar. Home Assistant unterstützt
 derzeit Entity-Zuordnungen und ausgewählte Steuerbefehle; die vollständige Geräteabdeckung von
-ioBroker ist dort noch nicht verfügbar.
+ioBroker ist dort noch nicht verfügbar. Integrierte Funktionen lassen sich als Module abschalten,
+**externe Module** erweitern die App ohne Änderung am Quellcode.
 
 ## Screenshots
 
@@ -38,7 +39,8 @@ verwendet für Smart-Home-Datenpunkte entweder ioBroker oder Home Assistant als 
 
 - 🛰️ **Übersicht als Kommandozentrale** – animierte Live-Anzeigen auf einen Blick: Uhr, „Home Core“ mit dem Zustand des Hauses, Wetter mit UV-Index und UV-Prognose, Rundinstrumente für Batterie (Flüssigkeitsanzeige), Licht und Wärmepumpe, Energiefluss mit 24-h-Kurve (während der Mähroboter mäht, stattdessen seine Live-Karte), Kameras mit Aktivitäts-Zeitleiste und alle Räume als leuchtende Kacheln
 - 🧊 **Design „Nexus“ (wählbar)** – holografischer digitaler Zwilling des Hauses mit schwebenden Etagen, Live-Werten an den Räumen, Hinweisen, Energie-Wellenform und Cockpit-Panels
-- 🧩 **Eigene Startseite (wählbar)** – frei gestaltbar aus Widgets (Uhr, Home Core, Wetter, einzelne Wetter- und Energieanzeigen wie UV-Index oder Regenradar, Rundinstrumente, Energiefluss, Sicherheit, Kamera, Räume, Szenen, Licht, Geräte, 3D-Drucker, Spotify, Müllabfuhr, Lüften, Text), die du direkt auf der Übersicht in einem Raster platzierst, verschiebst und in der Größe änderst; der Inhalt wächst mit der Widgetgröße
+- 🧩 **Eigene Startseite (wählbar)** – frei gestaltbar aus Widgets (Uhr, Home Core, Wetter, einzelne Wetter- und Energieanzeigen wie UV-Index oder Regenradar, Rundinstrumente, Energiefluss, Sicherheit, Kamera, Räume, Szenen, Licht, Geräte, 3D-Drucker, Spotify, Müllabfuhr, Lüften, Text, Widgets externer Module), die du direkt auf der Übersicht in einem Raster platzierst, verschiebst und in der Größe änderst; der Inhalt wächst mit der Widgetgröße
+- 🔌 **Module** – integrierte Module (Wetter, 3D-Drucker, Spotify, Mähroboter) lassen sich abschalten; **externe Module** (z. B. Pool, Wallbox, Bewässerung) werden als Paket über die Einstellungen installiert und bringen eine eigene Seite und/oder ein Startseiten-Widget mit – als fertige Kacheln oder als eigene HTML-Seite in einer Sandbox
 - 💡 **Licht & Steckdosen** – schalten, dimmen, Farben, „Alle aus“
 - 🔥 **Heizung & Klima** – Thermostate mit Soll-Wert-Drehregler, Klimaanlagen (je Betriebsart ein Sollwert), Wärmepumpe mit Warmwasser, Verdichter (Schalter oder Drehzahl) und Stromverbrauch (in W oder kW)
 - 🪟 **Rollläden** – animierte Position, Auf / Stopp / Zu
@@ -80,16 +82,17 @@ Ohne Konfiguration startet die App im **Demo-Modus** mit einer simulierten Insta
 12. [Kiosk-Sensoren am Raspberry Pi](#kiosk-sensoren-am-raspberry-pi)
 13. [Als App auf Android installieren](#als-app-auf-android-installieren)
 14. [Menü, Design und Kioskmodus (Wandtablet)](#menü-design-und-kioskmodus-wandtablet)
-15. [Konfiguration über Umgebungsvariablen](#konfiguration-über-umgebungsvariablen)
-16. [HTTPS](#https)
-17. [Sicherheit](#sicherheit)
-18. [Entwicklung](#entwicklung)
-19. [Aufbau des Projekts](#aufbau-des-projekts)
-20. [Konfigurationsformat](#konfigurationsformat-configjson)
-21. [API](#api)
-22. [Fehlersuche](#fehlersuche)
-23. [Herkunft und Entwicklung](#herkunft-und-entwicklung)
-24. [Home Assistant](#home-assistant)
+15. [Module: integriert und extern](#module-integriert-und-extern) · [Anleitung für Modul-Entwickler](./docs/MODULES.md)
+16. [Konfiguration über Umgebungsvariablen](#konfiguration-über-umgebungsvariablen)
+17. [HTTPS](#https)
+18. [Sicherheit](#sicherheit)
+19. [Entwicklung](#entwicklung)
+20. [Aufbau des Projekts](#aufbau-des-projekts)
+21. [Konfigurationsformat](#konfigurationsformat-configjson)
+22. [API](#api)
+23. [Fehlersuche](#fehlersuche)
+24. [Herkunft und Entwicklung](#herkunft-und-entwicklung)
+25. [Home Assistant](#home-assistant)
 
 ---
 
@@ -796,6 +799,41 @@ Im Chrome-Vollbild werden Hintergrundunschärfen der Standard- und Kiosk-Übersi
 **Updates:** Geöffnete Seiten laden nach einem Update des Containers automatisch die neue Version – beim Wiederverbinden mit dem Server und spätestens nach 5 Minuten. Ein Wandtablet muss dafür nicht angefasst werden.
 
 ---
+
+## Module: integriert und extern
+
+Unter **Einstellungen → Module** verwaltest du zwei Arten von Modulen:
+
+**Integrierte Module** – Wetter, 3D-Drucker, Spotify und Mähroboter sind fester Bestandteil der App. Sie
+lassen sich nicht entfernen, aber deaktivieren: Seite, Widgets und Navigationseintrag verschwinden, ihre
+API-Anfragen werden abgelehnt, Drucker- und Spotify-Verbindung werden getrennt und der Mähroboter aus den
+aktiven Geräten genommen. Die Einstellungen bleiben gespeichert und gelten wieder, sobald das Modul
+aktiviert wird. Alle anderen Funktionen sind fest eingebaut.
+
+**Externe Module** – Erweiterungen von Dritten oder eigene Module, z. B. Pool, Wallbox oder Bewässerung:
+
+1. *Externe Module → Modul installieren* und ein ZIP-Paket oder eine einzelne `module.json` wählen.
+   Der Server prüft das Paket gegen das [Modul-Schema](./docs/module.schema.json) und nennt bei Fehlern das Feld.
+2. Das Modul erscheint deaktiviert. Einschalten, die angefragten **Datenpunkte zuordnen** (Suche wie bei
+   den Geräten, funktioniert mit ioBroker, Home Assistant und im Demo-Modus), übrige Einstellungen
+   ausfüllen und **Speichern**.
+3. Die Seite des Moduls erscheint in der Navigation, sein Widget im Katalog der eigenen Startseite
+   (*Bearbeiten → Widget → Externes Modul*).
+
+Ein Update installierst du, indem du eine neue Version mit derselben ID hochlädst; Aktivierung und
+Einstellungen bleiben erhalten. *Entfernen* löscht Dateien und Einstellungen des Moduls. Die Pakete liegen
+in `data/modules/` (Container: `/data/modules`, änderbar mit `MODULES_DIR`) und überstehen Container-Updates.
+
+Externe Module führen keinen Code auf dem Server aus. Sie zeigen entweder fertige Kacheln der App
+(Wert, Schalter, Schieberegler, Taster, Text) oder eine eigene HTML-Seite in einer Sandbox, die nur über
+das Modul-SDK mit der App spricht. Ein Modul sieht ausschließlich die Datenpunkte, die du ihm zuordnest,
+und schaltet nur die, die es ausdrücklich als schreibend anmeldet. Installiere trotzdem nur Module aus
+vertrauenswürdigen Quellen. Zum Ausprobieren liegen zwei Beispiele unter
+[examples/modules/](./examples/modules/): `pool` (nur `module.json`) und `wallbox` (eigene HTML-Seite,
+vor dem Hochladen als ZIP packen). Eigene Module schreiben: [docs/MODULES.md](./docs/MODULES.md).
+
+---
+
 ## Konfiguration über Umgebungsvariablen
 
 Alle Werte sind optional. Integrationswerte dienen nur als **Vorgabe**. Was du unter *Einstellungen* einträgst und speicherst, hat **immer Vorrang** – die Umgebungsvariable gilt nur für Felder, die du nie von Hand gesetzt hast. Die Einstellungen zeigen pro Feld, ob der Wert aus einer Variablen stammt oder manuell gesetzt ist; mit „Vorgabe wiederherstellen“ gibst du ein Feld wieder an die Variable zurück. Passwörter: Ein in der App gespeichertes Passwort hat Vorrang, sonst gilt das aus der Umgebung (Passwörter aus der Umgebung werden nie in `config.json` geschrieben). Serverwerte wie `PORT`, `HTTPS`, `TLS_CERT` und `TLS_KEY` werden ausschließlich über die Umgebung konfiguriert.
@@ -806,6 +844,7 @@ Eine Änderung der `.env` wirkt erst, wenn das Projekt neu erstellt wird (ein Ne
 |----------|--------------|
 | `PORT` | Server-Port (Standard `8080`); im Container unverändert lassen und stattdessen den Host-Port in Compose konfigurieren |
 | `DATA_DIR` | Datenverzeichnis (im Container `/data`, sonst `./data` relativ zum Startverzeichnis) |
+| `MODULES_DIR` | Ordner der externen Module (Standard `<DATA_DIR>/modules`) |
 | `HTTPS` | Standard aktiv (auch leer); `false`, `0`, `no`, `off` deaktivieren HTTPS (Groß-/Kleinschreibung egal) |
 | `TLS_CERT`, `TLS_KEY` | Zertifikat und privater Schlüssel (PEM), Standard `<DATA_DIR>/certs/cert.pem` und `<DATA_DIR>/certs/key.pem`; im Container erreichbare Pfade |
 | `APP_USER`, `APP_PASSWORD` | Zugriffsschutz per HTTP Basic Auth |
@@ -844,6 +883,7 @@ Bestehende **Webhook-URLs der Surveillance Station auf `https://` umstellen** �
 - Zugangsdaten für ioBroker, Synology, OctoPrint, Bambu Lab, Spotify und Pushover bleiben **auf dem Server**; der Browser sieht sie nie (auch nicht in den Einstellungen – Passwörter, der OctoPrint-API-Key, der Bambu-Zugangscode, die Spotify-Anmeldung sowie User Key und API-Token von Pushover sind „write-only“).
 - `config.json` enthält die Passwörter, wenn du sie über die Oberfläche speicherst. Schütze das `data`-Verzeichnis entsprechend oder nutze Umgebungsvariablen.
 - Die App kann nur Datenpunkte schreiben, die in der Konfiguration vorkommen.
+- Externe Module laufen ohne Servercode in einer Sandbox ohne Zugriff auf Sitzung, Speicher und API der App. Sie erhalten nur die ihnen zugeordneten Datenpunkte und schreiben nur freigegebene. Ändernde API-Anfragen und WebSocket-Verbindungen von abgeschotteten Seiten (`Origin: null`) oder fremden Websites (`Sec-Fetch-Site: cross-site`) lehnt der Server ab. Module trotzdem nur aus vertrauenswürdigen Quellen installieren (siehe [docs/MODULES.md](./docs/MODULES.md#sicherheitsmodell)).
 - Setze `APP_USER` / `APP_PASSWORD`, bevor du die App über einen Reverse Proxy freigibst. Nur den **Webhook** (`/api/webhook/motion/…`) und die Adressen der Kiosk-Agenten (`/api/kiosk/report`, `/events`, `/radar`) erreichst du ohne Anmeldung – beide sind durch eigene zufällige Tokens geschützt. Kiosk-Agenten können nur ihre eigenen, nur lesbaren Werte melden.
 - Verwende für ioBroker und Surveillance Station eigene Konten mit minimalen Rechten.
 
@@ -886,39 +926,28 @@ Der Push auf `main` baut das Docker-Image, der Tag erzeugt automatisch ein GitHu
 
 ---
 
-## Erweiterbarkeit und Plugin-Aufwand
+## Erweiterbarkeit
 
-Unter **Einstellungen → Module** können Wetter, 3D-Drucker, Spotify und Mähroboter unabhängig
-deaktiviert und später mit ihren bisherigen Einstellungen wieder aktiviert werden. Wetter-, Drucker-
-und Spotify-API-Anfragen werden bei deaktiviertem Modul abgelehnt; Drucker und Spotify werden
-getrennt. Der Mähroboter wird aus der aktiven Gerätekonfiguration entfernt. Die Einstellungen
-bleiben gespeichert. Andere Funktionen sind weiterhin fest eingebaut.
+Es gibt zwei Wege, HomeApp zu erweitern:
 
-Dies ist eine interne Modulsteuerung, **kein Installationsmechanismus für externe Plugins**. Seiten
-wie Wetter, Drucker und Mähroboter werden teilweise erst beim Öffnen als Frontend-Code geladen.
-Navigation, Dashboard-Widgets, Einstellungen und Datentypen sind fest mit ihnen verdrahtet. Im
-Backend sind Dienste, Konfiguration, API, Status und Ereignisse zentral registriert. Beispielsweise
-nutzt die Lüftung das Wetter, der Mähroboter ioBroker-Datenpunkte und der Drucker zusätzlich
-Einblendungen und Benachrichtigungen.
+- **Externe Module** (empfohlen für neue Anzeigen und Bedienelemente): ein Paket aus `module.json` und
+  optional HTML/CSS/JS, das ohne Änderung am Quellcode über *Einstellungen → Module* installiert wird.
+  Format, SDK und Sicherheitsmodell beschreibt [docs/MODULES.md](./docs/MODULES.md), das Schema
+  [docs/module.schema.json](./docs/module.schema.json), Beispiele liegen unter [examples/modules/](./examples/modules/).
+  Server: `server/src/extensions.js` (Prüfung, Pakete, Routen), App: `client/src/components/Extension.tsx`,
+  `client/src/lib/extensions.ts` und `client/public/module-sdk.js`.
+- **Integrierte Module** (Änderung am Quellcode): für alles, was im Server laufen muss – eigene
+  Integrationen, Hintergrunddienste, API-Routen, Benachrichtigungen. Das Abschalten integrierter Module
+  steuert `server/src/modules.js`; Seiten, Widgets und Einstellungen sind dafür im Code verdrahtet.
 
-Für optionale Module wäre eine versionierte Schnittstelle für Lebenszyklus, Konfiguration und
-Migrationen, API-Routen, Status/Ereignisse sowie Frontend-Seiten, Navigation, Widgets und
-Einstellungen nötig. Abschalten müsste auch abhängige Funktionen, laufende Aufgaben und gespeicherte
-Konfiguration berücksichtigen. Empfehlenswert ist zuerst ein **internes Modulregister** mit
-ausgewählten gebündelten Modulen und anschließender Migration eines Pilotmoduls. Erst danach sollte
-ein externes Plugin-Format samt Versionskompatibilität, Installation und Update-Regeln festgelegt
-werden. Fremder Code im Serverprozess hätte grundsätzlich dieselben Rechte und Zugriffsmöglichkeiten
-wie die App; echte Isolation erfordert eine separate Sicherheitsarchitektur.
-
-Grobe Planung für eine mit dem Projekt vertraute Person, inklusive Tests und Migration, keine
-verbindliche Zusage: internes Fundament und ein Pilotmodul etwa **2–4 Personenwochen**, Migration
-weiterer eng gekoppelter Module jeweils etwa **1–3 Personenwochen**. Ein unterstütztes System für
-unabhängig installierbare Drittanbieter-Plugins benötigt zusätzlich mindestens **4–8 Personenwochen**,
-insbesondere für Verträge, Kompatibilität, Betrieb und Sicherheitskonzept. Aufwand und Reihenfolge
-hängen davon ab, ob Nachladen zur Laufzeit, isolierte Ausführung und ein Plugin-Katalog verlangt werden.
+Bewusst **nicht** unterstützt sind serverseitige Fremd-Plugins: Fremder Code im Serverprozess hätte
+dieselben Rechte wie die App (Zugangsdaten, alle Datenpunkte, Dateisystem). Eine isolierte Ausführung
+(eigener Prozess oder Container mit eng begrenzter, versionierter Schnittstelle, Rechtemodell, Updates)
+wäre ein eigenes Vorhaben; grobe Schätzung für eine mit dem Projekt vertraute Person: **4–8 Personenwochen**,
+keine verbindliche Zusage. Ebenfalls offen: Einbindung bestehender integrierter Module als externe
+Pakete, ein Modul-Katalog und Prüfsignaturen für Pakete.
 
 ---
-
 ## Aufbau des Projekts
 
 ```
@@ -948,19 +977,25 @@ HomeApp/
 │     ├─ waste.js          Müllabfuhr (ICS-Kalender, Erinnerungen)
 │     ├─ ventilation.js    Lüftungsempfehlung (absolute Feuchte, CO₂, Kühlen)
 │     ├─ pushover.js       Push-Nachrichten über Pushover (Ereignisse, Prioritäten, Ruhezeit)
+│     ├─ modules.js        Integrierte Module (Wetter, 3D-Drucker, Spotify, Mähroboter) ein/aus
+│     ├─ extensions.js     Externe Module (Manifest-Prüfung, ZIP-Pakete, Installation, Sandbox-Auslieferung)
+│     ├─ homeassistant.js  Home-Assistant-Verbindung (WebSocket-API)
 │     ├─ discovery.js      Automatische Geräteerkennung
 │     ├─ demo.js           Simulierte Installation (Demo-Modus)
 │     ├─ demo-content.js   Beispielräume/-geräte
 │     ├─ demo-mower.js     Simulierter Mähroboter (Datenpunkte wie der navimow-Adapter)
 │     └─ util.js           Kleine gemeinsame Hilfsfunktionen
 ├─ kiosk-agent/            Python-Dienst für den Raspberry Pi (LD2410, BH1750, SCD41, Display an/aus/Helligkeit)
+├─ docs/                   Screenshots, Anleitung und JSON-Schema für externe Module (MODULES.md, module.schema.json)
+├─ examples/modules/       Beispielmodule: pool (nur Kacheln), wallbox (eigene HTML-Seite)
 └─ client/                 React 19 + Vite + Tailwind 4 + Motion + Zustand
+   ├─ public/module-sdk.js SDK für die HTML-Seiten externer Module
    └─ src/
       ├─ App.tsx           Layout, Navigation, Seiten-Wechsel (Ansichten werden bei Bedarf geladen)
       ├─ lib/              Store, API, Typen, Gerätetypen, Icons, Format, Kennzahlen der Übersicht,
       │                    Anzeige-Einstellungen, PWA
       ├─ components/       Gerätekarten, Energiefluss, Diagramme, Kameras, 3D-Drucker, Spotify-Player, Mähroboter-Karte, HUD-Anzeigen der Übersicht,
-      │                    digitaler Zwilling (HomeTwin), Kiosk-Verhalten (DisplayEffects), UI
+      │                    digitaler Zwilling (HomeTwin), Kiosk-Verhalten (DisplayEffects), Seiten/Widgets externer Module (Extension), UI
       ├─ assets/           Gebündelte Bilder (Mondbild des Wettersymbols)
       └─ views/            Übersicht (Standard, Nexus, Eigene), Wetter, Räume, Licht, Klima, Energie, Kameras,
                            Spotify, 3D-Drucker, Mähroboter, Radar, Einstellungen
@@ -1013,7 +1048,10 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
                 "quietFrom": "22:00", "quietUntil": "07:00", "attachImage": true, "cameraFollowPopup": true, "printerProgressMinutes": 30,
                 "events": { "alarm": { "enabled": true, "priority": 1 }, "printerDone": { "enabled": true, "priority": 0 }, "…": {} } },
   "kiosk": { "screenOff": true, "screenOffSeconds": 180, "autoBrightness": true, "minBrightness": 15, "maxBrightness": 100,
-             "luxDark": 5, "luxBright": 400, "presenceMaxDistance": 0, "intervalSeconds": 10, "co2Altitude": 0, "temperatureOffset": 0 }
+             "luxDark": 5, "luxBright": 400, "presenceMaxDistance": 0, "intervalSeconds": 10, "co2Altitude": 0, "temperatureOffset": 0 },
+  // integrierte Module (nur ein/aus) und externe Module (Pakete in data/modules/<id>/)
+  "modules": { "weather": true, "printer": true, "spotify": false, "mower": true },
+  "extensions": { "pool": { "enabled": true, "settings": { "water": "mqtt.0.pool.temperature", "pump": "shelly.0.pool.relay0", "target": "", "backwash": "" } } }
 }
 ```
 
@@ -1032,6 +1070,10 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | GET | `/api/history?ids=a,b&hours=24` | Verlaufsdaten |
 | GET/PUT | `/api/config` | Konfiguration lesen / speichern |
 | PUT | `/api/dashboard` | Layout der eigenen Startseite speichern `{ widgets: [...] }` |
+| GET | `/api/extensions` | Installierte externe Module (auch fehlerhafte, mit Fehlermeldung) |
+| POST | `/api/extensions` | Externes Modul installieren / aktualisieren (Body: ZIP-Paket oder `module.json`, max. 5 MB) |
+| DELETE | `/api/extensions/:id` | Externes Modul mit Dateien und Einstellungen entfernen |
+| GET | `/extensions/:id/<datei>` | Dateien eines externen Moduls (immer mit Sandbox-CSP) |
 | GET | `/api/iobroker/search?q=` | Datenpunkt-Suche |
 | GET | `/api/weather` | Internet-Vorhersage für den eingestellten Standort (gecacht) |
 | GET | `/api/weather/geocode?q=` | Ortssuche (Name / Postleitzahl) |
@@ -1070,6 +1112,9 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | „ioBroker nicht erreichbar“ | Host/Port prüfen, Protokoll (`ws` vs. `socket.io`) und HTTPS passend zum Adapter wählen. Ist ioBroker vom HomeApp-Container bzw. Server aus erreichbar? |
 | „Anmeldung fehlgeschlagen“ | Benutzer/Passwort prüfen; Sonderzeichen im Passwort sind erlaubt. |
 | Geräte zeigen „–“ | Datenpunkt-ID falsch oder keine Leseberechtigung. |
+| Externes Modul lässt sich nicht installieren | Die Meldung nennt das fehlerhafte Feld bzw. die Datei; Ursachen und Lösungen stehen in [docs/MODULES.md](./docs/MODULES.md#fehlermeldungen). Ein Modul mit einer `module.json` im JSON-Schema-fähigen Editor (`"$schema"`) zu schreiben, zeigt Fehler schon vorher. |
+| Externes Modul erscheint nicht in der Navigation / im Widget-Katalog | Unter *Einstellungen → Module* aktivieren und **Speichern**. Nur Module mit `page` bekommen eine Seite, nur Module mit `widget` ein Widget. |
+| Externes Modul zeigt „nicht zugeordnet“ / „Noch nicht eingerichtet“ | Datenpunkte des Moduls unter *Einstellungen → Module* zuordnen und speichern. |
 | Build bricht mit „npm error Exit handler never called!“ ab | Die generische Compose-Datei verwendet `Dockerfile.full` und führt `npm ci` im Build aus. Bei älteren Synology-Docker-Versionen ist das Legacy-`Dockerfile` eine Alternative: Dafür `server/node_modules/` und `client/dist/` vorab erstellen und mit hochladen. |
 | „Kameras leer“ | Surveillance-Station-Verbindung unter *Einstellungen* prüfen; das Konto braucht das Recht „Live-Ansicht“ (bei 2FA siehe unten). |
 | „DSM verlangt … 2-Faktor-Anmeldung … noch nicht eingerichtet“ (Code 406) | Für das Konto ist 2FA vorgeschrieben, aber noch nicht eingerichtet. In DSM unter *Persönlich → Konto* die 2-Faktor-Authentifizierung einrichten und danach den ersten Code in der App eintragen ([Anleitung](#konto-mit-2-faktor-anmeldung-2fa)) – oder die Pflicht in *Systemsteuerung → Sicherheit → Konto* aufheben. |

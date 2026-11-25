@@ -3,7 +3,7 @@
  * the individual tabs live in ./settings/.
  */
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import { Bell, BellRing, Camera, ChevronDown, CloudOff, CloudSun, Fan, Info, LayoutGrid, LayoutList, MonitorSmartphone, Music, Network, Plug, Printer3d, Radar, RotateCw, Save, Search, Sparkles, Trash2, Zap, type LucideIcon } from 'lucide-react';
+import { Bell, BellRing, Camera, ChevronDown, CloudOff, CloudSun, Fan, Info, LayoutGrid, LayoutList, MonitorSmartphone, Music, Network, Plug, Printer3d, Puzzle, Radar, RotateCw, Save, Search, Sparkles, Trash2, Zap, type LucideIcon } from 'lucide-react';
 import { api, type EnvDefault } from '../lib/api';
 import { useStore } from '../lib/store';
 import type { AppConfig } from '../lib/types';
@@ -48,7 +48,7 @@ const TABS: { id: Tab; label: string; group: string; description: string; icon: 
   { id: 'kiosk', label: 'Kiosk-Sensoren', group: 'Funktionen', description: 'Präsenzradar LD2410, Lichtsensor und CO₂-Sensor am Raspberry Pi: Display aus bei Abwesenheit, Helligkeit nach Umgebungslicht.', icon: Radar, Component: KioskTab },
   { id: 'energy', label: 'Energie', group: 'Funktionen', description: 'Solar, Batterie, Stromnetz und Verbrauch zuordnen.', icon: Zap, Component: EnergyTab },
   { id: 'general', label: 'Allgemein & App', group: 'System', description: 'App-Name, Version, Neuigkeiten und Installation.', icon: Info, Component: GeneralTab },
-  { id: 'modules', label: 'Module', group: 'System', description: 'Optionale Funktionen aktivieren und deaktivieren.', icon: Plug, Component: ModulesTab },
+  { id: 'modules', label: 'Module', group: 'System', description: 'Integrierte Module deaktivieren, externe Module installieren, aktivieren und einrichten.', icon: Puzzle, Component: ModulesTab },
   { id: 'connection', label: 'Verbindungen & Zugriff', group: 'System', description: 'Datenquelle und Surveillance Station einrichten.', icon: Network, Component: ConnectionTab },
 ];
 const GROUPS = [...new Set(TABS.map((t) => t.group))];

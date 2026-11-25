@@ -3,6 +3,7 @@
  * messages of the server API.
  */
 import type { CustomDashboard } from './widgets';
+import type { ExtensionConfig } from './extensions';
 
 export type DeviceType = 'light' | 'switch' | 'thermostat' | 'blind' | 'sensor' | 'climate' | 'heatpump' | 'mower';
 
@@ -520,7 +521,10 @@ export interface AppConfig {
     verifySsl?: boolean;
   };
   homeassistant: { url: string; token?: string; tokenSet?: boolean; verifySsl: boolean };
+  /** Built-in modules: part of the app, they can only be switched off. */
   modules: { weather: boolean; printer: boolean; spotify: boolean; mower: boolean };
+  /** Installed external modules: enabled state and the admin's settings; missing with older servers. */
+  extensions?: Record<string, ExtensionConfig>;
   surveillance: SurveillanceConfig;
   /** 3D printer (shared settings and OctoPrint connection). */
   octoprint: OctoPrintConfig;

@@ -18,6 +18,7 @@ services:
       TLS_KEY: ${TLS_KEY:-}
       APP_USER: ${APP_USER:-}
       APP_PASSWORD: ${APP_PASSWORD:-}
+      MODULES_DIR: ${MODULES_DIR:-}
       DEMO_MODE: ${DEMO_MODE:-}
       IOBROKER_MODE: ${IOBROKER_MODE:-}
       IOBROKER_HOST: ${IOBROKER_HOST:-}

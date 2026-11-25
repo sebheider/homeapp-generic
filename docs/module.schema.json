@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebheider/homeapp-generic/blob/main/docs/module.schema.json",
+  "title": "HomeApp – Manifest eines externen Moduls (module.json)",
+  "description": "Schema-Version 1. Beschreibung: docs/MODULES.md. Der Server prüft beim Installieren dieselben Regeln (server/src/extensions.js) und meldet das fehlerhafte Feld.",
+  "type": "object",
+  "required": ["manifestVersion", "id", "name", "version"],
+  "anyOf": [{ "required": ["page"] }, { "required": ["widget"] }],
+  "properties": {
+    "$schema": { "type": "string" },
+    "manifestVersion": { "const": 1, "description": "Version dieses Schemas." },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+      "minLength": 2,
+      "maxLength": 40,
+      "not": {
+        "enum": ["home", "weather", "rooms", "lights", "climate", "energy", "cameras", "spotify", "printer", "mower", "radar", "settings",
+          "modules", "module", "extensions", "extension", "homeapp", "api", "demo", "iobroker", "homeassistant", "kiosk"]
+      },
+      "description": "Eindeutige ID; zugleich Ordnername und Teil der Adresse (#ext-<id>). Eine neue Version mit gleicher ID ersetzt die installierte."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$", "maxLength": 40 },
+    "description": { "type": "string", "maxLength": 300 },
+    "author": { "type": "string", "maxLength": 80 },
+    "homepage": { "type": "string", "pattern": "^https?://\\S+$", "maxLength": 200 },
+    "icon": {
+      "type": "string",
+      "pattern": "^[a-zA-Z]{1,30}$",
+      "description": "Symbolname aus dem Symbolvorrat der App (z. B. waves, car, sun, plug, droplets, thermometer, zap); unbekannte Namen zeigen ein Puzzleteil."
+    },
+    "settings": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Felder, die der Admin unter Einstellungen → Module ausfüllt. Datenpunkte werden nie im Modul festgelegt, sondern hier zugeordnet.",
+      "items": { "$ref": "#/$defs/setting" }
+    },
+    "page": { "$ref": "#/$defs/page" },
+    "widget": { "$ref": "#/$defs/widget" }
+  },
+  "$defs": {
+    "key": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$", "maxLength": 40 },
+    "text": { "type": "string", "maxLength": 60 },
+    "setting": {
+      "type": "object",
+      "required": ["key", "type", "label"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "type": { "enum": ["datapoint", "text", "number", "boolean", "select"] },
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "description": { "type": "string", "maxLength": 200 },
+        "required": { "type": "boolean" },
+        "write": { "type": "boolean", "description": "Nur bei datapoint: das Modul darf den Datenpunkt schreiben." },
+        "default": { "type": ["string", "number", "boolean"] },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "unit": { "type": "string", "maxLength": 12 },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": { "value": { "type": "string", "minLength": 1, "maxLength": 60 }, "label": { "type": "string", "minLength": 1, "maxLength": 60 } }
+          }
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "select" } } }, "then": { "required": ["options"] } },
+        { "if": { "properties": { "type": { "const": "text" } } }, "then": { "properties": { "default": { "type": "string", "maxLength": 200 } } } },
+        { "if": { "properties": { "type": { "const": "number" } } }, "then": { "properties": { "default": { "type": "number" } } } },
+        { "if": { "properties": { "type": { "const": "boolean" } } }, "then": { "properties": { "default": { "type": "boolean" } } } }
+      ]
+    },
+    "entry": {
+      "type": "string",
+      "pattern": "^(?!/)(?:[A-Za-z0-9_-][A-Za-z0-9._-]*/)*[A-Za-z0-9_-][A-Za-z0-9._-]*\\.html$",
+      "maxLength": 200,
+      "description": "Relativer Pfad einer HTML-Datei im Paket; sie läuft abgeschottet im Sandbox-Frame und spricht über /module-sdk.js mit der App."
+    },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 40,
+      "items": { "$ref": "#/$defs/card" }
+    },
+    "card": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["value", "switch", "slider", "button", "text"] },
+        "label": { "$ref": "#/$defs/text" },
+        "datapoint": { "$ref": "#/$defs/key", "description": "key einer Einstellung vom Typ datapoint; bei switch, slider und button mit write: true." },
+        "unit": { "type": "string", "maxLength": 12 },
+        "decimals": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "value": { "type": ["string", "number", "boolean"], "description": "button: Wert, der beim Tippen geschrieben wird." },
+        "confirm": { "type": "string", "maxLength": 120, "description": "button: Sicherheitsabfrage vor dem Schreiben." },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "text" } } }, "then": { "required": ["text"] }, "else": { "required": ["datapoint"] } },
+        { "if": { "properties": { "type": { "const": "button" } } }, "then": { "required": ["value"] } }
+      ]
+    },
+    "page": {
+      "type": "object",
+      "description": "Eigene Seite in der Navigation: genau eines von entry (eigene HTML-Seite) oder cards (fertige Kacheln).",
+      "properties": {
+        "title": { "type": "string", "maxLength": 40 },
+        "entry": { "$ref": "#/$defs/entry" },
+        "cards": { "$ref": "#/$defs/cards" }
+      },
+      "oneOf": [{ "required": ["entry"] }, { "required": ["cards"] }]
+    },
+    "widget": {
+      "type": "object",
+      "description": "Widget für die eigene Startseite: genau eines von entry oder cards.",
+      "properties": {
+        "size": {
+          "type": "array",
+          "prefixItems": [{ "type": "integer", "minimum": 1, "maximum": 12 }, { "type": "integer", "minimum": 1, "maximum": 24 }],
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Startgröße [Breite, Höhe] in Rasterfeldern (Standard [4, 3])."
+        },
+        "entry": { "$ref": "#/$defs/entry" },
+        "cards": { "$ref": "#/$defs/cards" }
+      },
+      "oneOf": [{ "required": ["entry"] }, { "required": ["cards"] }]
+    }
+  }
+}

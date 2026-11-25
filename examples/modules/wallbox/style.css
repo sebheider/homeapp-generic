@@ -1,0 +1,39 @@
+/* The app passes its colours as --homeapp-* variables (see module-sdk.js); the values here are fallbacks. */
+:root {
+  color-scheme: dark;
+  --fg: var(--homeapp-fg, #eef1fb);
+  --muted: var(--homeapp-muted, #8c96b8);
+  --line: var(--homeapp-line, rgba(255, 255, 255, 0.1));
+  --card: var(--homeapp-card, rgba(255, 255, 255, 0.055));
+  --accent: var(--homeapp-accent, #7c5cff);
+}
+:root[data-theme='light'] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: transparent; color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
+main { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; padding: 0.5rem 0 1rem; }
+h1 { margin: 0; font-size: 1.1rem; align-self: flex-start; }
+.muted { color: var(--muted); font-size: 0.8rem; margin: 0; min-height: 1em; }
+
+.gauge { position: relative; width: min(100%, 18rem); }
+.gauge svg { display: block; width: 100%; }
+.gauge path { fill: none; stroke-width: 10; stroke-linecap: round; }
+.track { stroke: var(--line); }
+.arc { stroke: var(--accent); stroke-dasharray: 0 157; transition: stroke-dasharray 0.6s ease; }
+.value { position: absolute; inset: auto 0 0; text-align: center; font-size: 2rem; font-weight: 700; }
+.value small { font-size: 0.9rem; color: var(--muted); font-weight: 500; }
+
+button {
+  border: 1px solid var(--line); background: var(--card); color: var(--fg); border-radius: 0.9rem;
+  padding: 0.6rem 1.2rem; font: inherit; font-weight: 600; cursor: pointer;
+}
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.row { display: flex; align-items: center; gap: 0.6rem; width: min(100%, 22rem); }
+.row[hidden] { display: none; }
+.row input { flex: 1; accent-color: var(--accent); }
+.row output { min-width: 3.5em; text-align: right; color: var(--muted); }
+
+/* the widget is small: only gauge and button */
+body[data-view='widget'] .page-only { display: none; }
+body[data-view='widget'] main { padding: 0; gap: 0.5rem; }
+body[data-view='widget'] .value { font-size: 1.5rem; }

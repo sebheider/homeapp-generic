@@ -20,6 +20,7 @@ export const MAX_HEIGHT = 24;
 export const MAX_WIDGETS = 60;
 export const WIDGET_TYPES = [
   'clock', 'status', 'weather', 'weatherPart', 'gauge', 'energy', 'energyPart', 'security', 'camera', 'rooms', 'room', 'scenes', 'lights', 'devices', 'text', 'printer', 'spotify', 'waste', 'ventilation', 'kiosk',
+  'extension',
 ];
 
 const int = (v, min, max, fallback) => {

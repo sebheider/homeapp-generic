@@ -13,20 +13,23 @@ import { reloadIfUpdated } from './pwa';
 import { CAMERA_POPUP_PAUSE_MINUTES, loadCameraPopupPause, saveCameraPopupPause, shouldShowCameraPopup } from './cameraPopups';
 import { loadHiddenPrinterJob, saveHiddenPrinterJob, shouldShowPrinterPopup } from './printer';
 import { applyCommand } from './spotify';
+import { isExtensionView, type ExtensionManifest } from './extensions';
 import type { CustomDashboard, Widget } from './widgets';
 import type {
   ActiveAlert, AppConfig, CameraInfo, MotionEvent, PopupPosition, PopupSize, PrinterData, PrinterPopupEvent, RadarFrame, SpotifyCommand, SpotifyState, StateEntry, Status, VentilationData, WasteData,
 } from './types';
 
-/** All pages of the app; the current one is mirrored in the URL hash (`#energy`). */
+/** Built-in pages of the app; the current one is mirrored in the URL hash (`#energy`). */
 export const VIEWS = ['home', 'weather', 'rooms', 'lights', 'climate', 'energy', 'cameras', 'spotify', 'printer', 'mower', 'radar', 'settings'] as const;
-/** A page of the app. */
-export type View = (typeof VIEWS)[number];
+/** A built-in page. */
+export type BuiltinView = (typeof VIEWS)[number];
+/** A page of the app: a built-in page or the page of an external module (`ext-<id>`). */
+export type View = BuiltinView | `ext-${string}`;
 /** Colour scheme; stored in localStorage. */
 export type Theme = 'dark' | 'light';
 
 /** Type guard for strings coming from the URL hash. */
-export const isView = (v: string): v is View => (VIEWS as readonly string[]).includes(v);
+export const isView = (v: string): v is View => (VIEWS as readonly string[]).includes(v) || isExtensionView(v);
 
 /** The view named in the current URL hash, or null if the hash is empty / unknown. */
 export const viewFromHash = (): View | null => {
@@ -79,6 +82,8 @@ interface Store {
   waste: WasteData | null;
   /** Ventilation advice per room (null with older servers). */
   ventilation: VentilationData | null;
+  /** Manifests of the installed external modules (enabled or not, see `config.extensions`). */
+  extensions: ExtensionManifest[];
   /** Latest live frame of each wall display's presence radar (only while a radar page is open, see `watchRadar`). */
   radar: Record<string, RadarSample>;
   /** Notifications the user hid: alert id -> `since` of the hidden occurrence (persisted). */
@@ -198,6 +203,7 @@ export const useStore = create<Store>((set, get) => ({
   spotify: null,
   waste: null,
   ventilation: null,
+  extensions: [],
   radar: {},
   dismissedAlerts: loadDismissed(),
   toasts: [],
@@ -220,6 +226,7 @@ export const useStore = create<Store>((set, get) => ({
         spotify: b.spotify ? { ...b.spotify, receivedAt: Date.now() } : null,
         waste: b.waste ?? null,
         ventilation: b.ventilation ?? null,
+        extensions: b.extensions ?? [],
       });
     } catch (err) {
       set({ loadError: (err as Error).message });

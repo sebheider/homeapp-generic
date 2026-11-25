@@ -31,3 +31,18 @@ export function basicAuth(user, pass) {
     return userOk && passOk;
   };
 }
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * True for requests a browser sends on behalf of another site or of a sandboxed page (opaque origin
+ * "null", e.g. the page of an external module). Such requests must not change anything – browsers would
+ * otherwise attach the saved Basic Auth credentials.
+ */
+export const foreignRequest = (headers) => headers.origin === 'null' || headers['sec-fetch-site'] === 'cross-site';
+
+/** Express middleware: rejects changing requests ({@link foreignRequest}); reading stays possible. */
+export function blockForeignWrites(req, res, next) {
+  if (SAFE_METHODS.has(req.method) || !foreignRequest(req.headers)) return next();
+  res.status(403).json({ error: 'Anfrage von einer fremden oder abgeschotteten Seite abgelehnt' });
+}

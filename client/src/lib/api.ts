@@ -3,6 +3,7 @@
  * Synology are never handled here – the server keeps them.
  */
 import type { CustomDashboard } from './widgets';
+import type { ExtensionManifest, InstalledExtension } from './extensions';
 import type {
   ActiveAlert, AppConfig, CameraInfo, Device, EnergyConfig, MotionEvent, ObjectHit, PrinterCommand, PrinterData, PrinterTempHistory, Room, Scene, Series, SpotifyCollection, SpotifyCommand,
   SpotifyDevice, SpotifySearchResult, SpotifyState, SpotifyTrack, StateEntry, Status, KioskAgent, PushoverConfig, PushoverStatus, VentilationData, WasteData, WasteDay, WasteItem,
@@ -42,6 +43,8 @@ export interface Bootstrap {
   waste?: WasteData | null;
   /** Ventilation advice; missing with older servers. */
   ventilation?: VentilationData | null;
+  /** Manifests of the installed external modules; missing with older servers. */
+  extensions?: ExtensionManifest[];
 }
 
 /** Result of checking a waste calendar address. */
@@ -97,6 +100,12 @@ export const api = {
   saveConfig: (config: AppConfig, resetEnv: string[] = []) => request('/api/config', { method: 'PUT', body: JSON.stringify({ ...config, resetEnv }) }),
   /** Saves the freely designable start page (pushed to every browser); returns the cleaned version. */
   saveDashboard: (dashboard: CustomDashboard) => request<{ ok: boolean; dashboard: CustomDashboard }>('/api/dashboard', { method: 'PUT', body: JSON.stringify(dashboard) }),
+  /** Installed external modules incl. broken packages. */
+  extensions: () => request<{ extensions: InstalledExtension[]; manifestVersion: number }>('/api/extensions'),
+  /** Installs or updates an external module from a ZIP package or a module.json. */
+  installExtension: (file: Blob) =>
+    request<{ ok: boolean; manifest: ExtensionManifest; previousVersion: string | null }>('/api/extensions', { method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' } }),
+  removeExtension: (id: string) => request<{ ok: boolean }>(`/api/extensions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   cameras: () => request<CameraInfo[]>('/api/cameras'),
   /** Scans ioBroker for rooms, devices, scenes, energy and weather datapoints. */
   discover: () => request<Discovery>('/api/discovery', { method: 'POST' }),

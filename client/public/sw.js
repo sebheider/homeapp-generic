@@ -5,7 +5,7 @@
  *   - built files under /assets/ have content hashes in their names -> cache first, kept forever
  *   - pages (navigation) -> network first, the cached start page is only used when the server
  *     is unreachable (the app then shows its own "Server nicht erreichbar" screen)
- *   - API calls, the WebSocket and camera pictures are never cached
+ *   - API calls, the WebSocket, camera pictures and the files of external modules (/extensions/) are never cached
  */
 const CACHE = 'homeapp-v1';
 
@@ -25,7 +25,7 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws')) return;
+  if (url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws') || url.pathname.startsWith('/extensions/')) return;
 
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith((async () => {
@@ -40,7 +40,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (req.mode === 'navigate') {
+  // only the app itself is kept as start page, not pages shown in frames
+  if (req.mode === 'navigate' && req.destination === 'document') {
     event.respondWith((async () => {
       try {
         const res = await fetch(req);

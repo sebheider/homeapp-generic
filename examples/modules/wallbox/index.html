@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wallbox</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- the SDK is served by the app; it connects this sandboxed page with the app -->
+  <script src="/module-sdk.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1 id="title" class="page-only">Wallbox</h1>
+    <div class="gauge">
+      <svg viewBox="0 0 120 66" aria-hidden="true">
+        <path class="track" d="M10 60 A50 50 0 0 1 110 60" />
+        <path id="arc" class="arc" d="M10 60 A50 50 0 0 1 110 60" />
+      </svg>
+      <div class="value"><span id="power">–</span> <small>kW</small></div>
+    </div>
+    <button id="toggle" type="button">Laden starten</button>
+    <label id="currentRow" class="row page-only">
+      <span>Ladestrom</span>
+      <input id="current" type="range" min="6" max="32" step="1">
+      <output id="currentOut">–</output>
+    </label>
+    <p id="status" class="muted" role="status"></p>
+  </main>
+</body>
+</html>

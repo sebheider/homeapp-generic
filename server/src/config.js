@@ -118,6 +118,8 @@ const defaults = () => ({
   alerts: [], // user-defined notifications, see alerts.js
   layouts: sanitizeLayouts(), // grouping and order of the pages "Licht", "Klima" and "Räume", see layouts.js
   customDashboard: sanitizeDashboard(), // freely designable start page (widgets in a grid), see dashboard.js
+  // external modules: { <id>: { enabled, settings } }, the packages live in the modules folder, see extensions.js
+  extensions: {},
 });
 
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
@@ -204,9 +206,11 @@ export function applyEnv(raw, userSet, e = process.env) {
 const envKey = (e = process.env) => [...ENV_FIELDS.map(([env]) => e[env] ?? ''), e.DEMO_MODE ?? ''].join('\u0000');
 
 /** Effective configuration: stored values + environment defaults; in demo mode the sample installation. */
-function buildEffective(raw, userSet) {
+function buildEffective(raw, userSet, extensions) {
   const cfg = applyEnv(raw, userSet);
   cfg.modules = sanitizeModules(cfg.modules);
+  // only installed, valid external modules (disabled ones included, they are filtered where used)
+  cfg.extensions = extensions ? extensions.sanitizeConfig(cfg.extensions) : {};
   if (cfg.iobroker.mode === 'demo') {
     const demo = demoContent();
     cfg.rooms = demo.rooms;
@@ -225,9 +229,10 @@ function buildEffective(raw, userSet) {
 
 /**
  * Every state id a configuration refers to (devices, energy, weather, camera motion states, scene actions, alerts,
- * ventilation advice). Local kiosk datapoints (homeapp.kiosk.*) are included; they are not requested from ioBroker.
+ * ventilation advice, datapoints of enabled external modules). Local kiosk datapoints (homeapp.kiosk.*) are included;
+ * they are not requested from ioBroker.
  */
-function collectStateIds(cfg) {
+function collectStateIds(cfg, extensions) {
   const ids = new Set();
   const add = (id) => id && ids.add(id);
   for (const d of cfg.devices) Object.values(d.states || {}).forEach(add);
@@ -240,6 +245,7 @@ function collectStateIds(cfg) {
   for (const s of cfg.scenes) for (const a of s.actions || []) add(a.state);
   for (const a of cfg.alerts || []) add(a.state);
   ventilationStateIds(cfg).forEach(add);
+  extensions?.stateIds(cfg.extensions).forEach(add);
   return ids;
 }
 
@@ -279,6 +285,8 @@ function maskSecrets(cfg) {
 export class ConfigStore extends EventEmitter {
   /** Cached effective configuration and its state ids (see {@link ConfigStore#effective}). */
   #cache = null;
+  /** Installed external modules (see {@link setExtensions}); null until the registry is attached. */
+  #extensions = null;
 
   constructor() {
     super();
@@ -305,6 +313,7 @@ export class ConfigStore extends EventEmitter {
     this.raw.ventilation = sanitizeVentilation(this.raw.ventilation);
     this.raw.pushover = sanitizePushover(this.raw.pushover);
     this.raw.modules = sanitizeModules(this.raw.modules);
+    if (!isObj(this.raw.extensions)) this.raw.extensions = {};
     // files from before the tracking: derive the manually set fields once and remember them
     this.userSet = stored ? new Set(stored) : this.fileExisted ? inferUserSet(this.raw) : new Set();
     // a newly generated token must be stored, otherwise it would change with every restart
@@ -321,8 +330,26 @@ export class ConfigStore extends EventEmitter {
   /** Cache entry for the current stored configuration and environment (rebuilt when either changes). */
   #current() {
     const key = envKey();
-    if (this.#cache?.key !== key) this.#cache = { key, cfg: buildEffective(this.raw, this.userSet), ids: null };
+    if (this.#cache?.key !== key) this.#cache = { key, cfg: buildEffective(this.raw, this.userSet, this.#extensions), ids: null };
     return this.#cache;
+  }
+
+  /**
+   * Attaches the registry of the installed external modules (extensions.js). From then on their stored
+   * settings are cleaned against the manifests and the datapoints of enabled modules count as known.
+   */
+  setExtensions(registry) {
+    this.#extensions = registry;
+    this.raw.extensions = registry.sanitizeConfig(this.raw.extensions, this.raw.extensions);
+    this.#cache = null;
+  }
+
+  /** A module was installed, updated or removed: clean its stored state and restart the integrations. */
+  extensionsChanged() {
+    if (this.#extensions) this.raw.extensions = this.#extensions.sanitizeConfig(this.raw.extensions, this.raw.extensions);
+    this.#cache = null;
+    this.persist();
+    this.emit('change');
   }
 
   /**
@@ -352,7 +379,10 @@ export class ConfigStore extends EventEmitter {
    * default for fields not set by hand), without the demo content and with secrets masked.
    */
   editableConfig() {
-    return maskSecrets(applyEnv(this.raw, this.userSet));
+    const cfg = applyEnv(this.raw, this.userSet);
+    // every installed module appears with its defaults, so the editor can switch it on
+    if (this.#extensions) cfg.extensions = this.#extensions.sanitizeConfig(cfg.extensions);
+    return maskSecrets(cfg);
   }
 
   /**
@@ -429,6 +459,7 @@ export class ConfigStore extends EventEmitter {
     merged.ventilation = sanitizeVentilation(merged.ventilation);
     merged.pushover = sanitizePushover(merged.pushover);
     merged.modules = sanitizeModules(merged.modules);
+    merged.extensions = this.#extensions ? this.#extensions.sanitizeConfig(merged.extensions, this.raw.extensions) : this.raw.extensions;
     if (!next.pushover?.user) merged.pushover.user = this.raw.pushover.user;
     if (!next.pushover?.token) merged.pushover.token = this.raw.pushover.token;
     merged.devices = (merged.devices || []).filter((d) => d && d.id && d.type);
@@ -486,9 +517,9 @@ export class ConfigStore extends EventEmitter {
     this.persist();
   }
 
-  /** All state ids the app needs (devices, energy, weather, camera motion states, scene actions, alerts, ventilation); cached, do not modify. */
+  /** All state ids the app needs (devices, energy, weather, camera motion states, scene actions, alerts, ventilation, external modules); cached, do not modify. */
   stateIds() {
     const c = this.#current();
-    return (c.ids ??= collectStateIds(c.cfg));
+    return (c.ids ??= collectStateIds(c.cfg, this.#extensions));
   }
 }

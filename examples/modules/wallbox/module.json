@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../docs/module.schema.json",
+  "manifestVersion": 1,
+  "id": "wallbox",
+  "name": "Wallbox",
+  "version": "1.0.0",
+  "description": "Eigene HTML-Seite mit Ladeleistungs-Anzeige, Start/Stopp und Ladestrom – Beispiel für das Modul-SDK.",
+  "author": "HomeApp-Beispiel",
+  "icon": "car",
+  "settings": [
+    { "key": "power", "type": "datapoint", "label": "Ladeleistung (W)", "required": true },
+    { "key": "charging", "type": "datapoint", "label": "Laden ein/aus", "write": true, "required": true },
+    { "key": "current", "type": "datapoint", "label": "Ladestrom (A)", "write": true },
+    { "key": "maxPower", "type": "number", "label": "Maximale Ladeleistung", "unit": "W", "min": 1000, "max": 50000, "step": 100, "default": 11000 },
+    { "key": "title", "type": "text", "label": "Überschrift", "default": "Wallbox" }
+  ],
+  "page": { "title": "Wallbox", "entry": "index.html" },
+  "widget": { "entry": "index.html", "size": [3, 4] }
+}

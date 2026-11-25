@@ -15,7 +15,7 @@ export const MAX_WIDGETS = 60;
 
 export type WidgetType =
   | 'clock' | 'status' | 'weather' | 'weatherPart' | 'gauge' | 'energy' | 'energyPart' | 'security' | 'camera' | 'rooms' | 'room' | 'scenes' | 'lights' | 'devices' | 'text'
-  | 'printer' | 'spotify' | 'waste' | 'ventilation' | 'kiosk';
+  | 'printer' | 'spotify' | 'waste' | 'ventilation' | 'kiosk' | 'extension';
 
 /** Widget settings (title, text, ids of devices / rooms / cameras, switches). */
 export type WidgetOptions = Record<string, string | number | boolean | string[]>;
@@ -126,6 +126,7 @@ export const WIDGETS: Record<WidgetType, WidgetInfo> = {
   waste: { label: 'Müllabfuhr', text: 'Die nächsten Abholtermine aus dem Abfuhrkalender (ICS), farbig nach Tonne.', size: [4, 3], min: [2, 2], options: { count: 4 } },
   ventilation: { label: 'Lüften', text: 'Lüftungsempfehlung je Raum aus Luftfeuchte, CO₂ und Außenluft.', size: [4, 4], min: [2, 2] },
   kiosk: { label: 'Kiosk-Sensoren', text: 'CO₂-Ampel, Temperatur, Luftfeuchte, Helligkeit und Präsenz der Wanddisplays.', size: [6, 4], min: [3, 3] },
+  extension: { label: 'Externes Modul', text: 'Das Widget eines installierten externen Moduls (Einstellungen → Module).', size: [4, 3], min: [1, 1], options: { extension: '' } },
 };
 
 export const WIDGET_TYPES = Object.keys(WIDGETS) as WidgetType[];
@@ -133,10 +134,10 @@ export const WIDGET_TYPES = Object.keys(WIDGETS) as WidgetType[];
 /**
  * True if the content of the widget grows with a widget that is larger than its content (see
  * lib/fit.ts). Not for widgets that fill their area by themselves (gauges, Home Core, camera
- * pictures, the energy flow without curve, the rain radar) or where it was switched off.
+ * pictures, the energy flow without curve, the rain radar, external modules) or where it was switched off.
  */
 export function scalesContent(w: { type: WidgetType; options: WidgetOptions }): boolean {
-  if (w.type === 'status' || w.type === 'gauge' || w.type === 'camera') return false;
+  if (w.type === 'status' || w.type === 'gauge' || w.type === 'camera' || w.type === 'extension') return false;
   if (w.type === 'energy' && !w.options.chart) return false;
   if (w.type === 'weatherPart' && w.options.part === 'radar') return false;
   return w.options.scale !== false;
@@ -209,14 +210,18 @@ export function widgetId(type: string, widgets: { id: string }[]) {
   return `${type}-${i}`;
 }
 
-/** Adds a widget of the given type in its default size (or that of the chosen part) at the first free place. */
-export function addWidget(widgets: Widget[], type: WidgetType, options: WidgetOptions = {}): Widget[] {
+/**
+ * Adds a widget of the given type in its default size (or that of the chosen part, or `size`, e.g. the
+ * size an external module asks for) at the first free place.
+ */
+export function addWidget(widgets: Widget[], type: WidgetType, options: WidgetOptions = {}, size?: [number, number]): Widget[] {
   if (widgets.length >= MAX_WIDGETS) return widgets;
   const info = WIDGETS[type];
   const opts = { ...info.options, ...options };
-  const [w, h] = widgetPart({ type, options: opts })?.size ?? info.size;
-  const { x, y } = findFreeSpot(widgets, w, h);
-  return [...widgets, { id: widgetId(type, widgets), type, x, y, w, h, options: opts }];
+  const [w0, h0] = size ?? widgetPart({ type, options: opts })?.size ?? info.size;
+  const r = clampRect({ x: 0, y: 0, w: w0, h: h0 }, type);
+  const { x, y } = findFreeSpot(widgets, r.w, r.h);
+  return [...widgets, { id: widgetId(type, widgets), type, x, y, w: r.w, h: r.h, options: opts }];
 }
 
 /** Widgets in reading order (top to bottom, left to right) for the one-column layout of phones. */

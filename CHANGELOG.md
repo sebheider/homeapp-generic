@@ -3,6 +3,22 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.7.0] – 2026-11-25
+
+Module: integrierte Funktionen abschalten, externe Module installieren – und Home Assistant als Datenquelle.
+
+### Hinzugefügt
+- **Externe Module** unter *Einstellungen → Module*: Erweiterungen (z. B. Pool, Wallbox, Bewässerung) werden als ZIP-Paket oder einzelne `module.json` hochgeladen, geprüft und installiert – ohne Änderung am Quellcode. Ein Modul bringt eine **eigene Seite** in der Navigation und/oder ein **Widget** für die eigene Startseite mit, entweder als fertige Kacheln der App (Wert, Schalter, Schieberegler, Taster, Text) oder als eigene HTML-Seite in einer Sandbox, die über das Modul-SDK (`/module-sdk.js`) mit der App spricht.
+- Module folgen dem **Modul-Schema Version 1** (`docs/module.schema.json`, Anleitung in `docs/MODULES.md`, Beispiele unter `examples/modules/`). Fehlerhafte Pakete werden mit dem betroffenen Feld abgelehnt; ein misslungenes Update lässt die installierte Version unverändert.
+- Datenpunkte legt nicht das Modul fest: Es meldet Plätze an, die du in den Einstellungen deinen ioBroker-States oder Home-Assistant-Entities zuordnest. Ein Modul sieht nur diese Werte und schreibt nur Plätze, die es ausdrücklich als schreibend anmeldet.
+- **Integrierte Module** (Wetter, 3D-Drucker, Spotify, Mähroboter) lassen sich abschalten: Seite, Widgets und Schnittstellen sind dann aus, die Einstellungen bleiben erhalten.
+- **Home Assistant als Datenquelle** neben ioBroker (*Einstellungen → Verbindungen & Zugriff*): Verbindung über die WebSocket-API mit langlebigem Zugriffstoken, Live-Werte, Datenpunktsuche und automatische Erkennung von Lichtern, Schaltern, Rollläden, Thermostaten, Sensoren und Szenen. Variablen `HOMEASSISTANT_URL`, `HOMEASSISTANT_TOKEN`, `HOMEASSISTANT_VERIFY_SSL`.
+- Neue Variable `MODULES_DIR` für einen anderen Ordner der externen Module (Standard `data/modules`).
+
+### Sicherheit
+- Ändernde API-Anfragen und WebSocket-Verbindungen von abgeschotteten Seiten (`Origin: null`) und fremden Websites (`Sec-Fetch-Site: cross-site`) werden abgelehnt.
+- Der Service Worker speichert keine Seiten mehr, die in Frames angezeigt werden.
+
 ## [2.6.0] – 2026-11-25
 
 Wetter: Der Mond im Wettersymbol sieht aus wie gerade draußen am Himmel.
