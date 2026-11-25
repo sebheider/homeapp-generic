@@ -1,6 +1,9 @@
 node_modules/
 dist/
-data/
+# data/ ist bei Klon und ZIP-Download vorhanden (der Synology Container Manager legt den Ordner nicht selbst an); sein Inhalt bleibt draußen
+/data/*
+!/data/.gitkeep
+*/**/data/
 *.log
 .env
 .env.*

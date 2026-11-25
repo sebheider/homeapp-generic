@@ -8,8 +8,17 @@
 # Docker baut dabei alles selbst (npm-Pakete und Frontend), vorher muss nichts erstellt werden. Nur bei
 # „npm error Exit handler never called!“ (ältere Docker-Versionen) siehe README → Fehlersuche.
 #
-# Der Ordner ./data (= /volume1/docker/HomeApp/data) wird beim ersten Start angelegt
-# und enthält config.json und history.json.
+# Der Ordner ./data (= /volume1/docker/HomeApp/data) muss existieren – er ist im Repository bereits
+# (leer) enthalten; der Container Manager legt ihn nicht selbst an. Er nimmt Konfiguration, Zugangsdaten,
+# Verlauf und externe Module auf.
+#
+# GGF. ANPASSEN – vor allem, wenn auf dem Host schon eine HomeApp oder ein anderes Projekt läuft:
+#   - Host-Port:      HOMEAPP_PORT in .env (Standard 8095) oder direkt unten unter "ports"
+#   - Containername:  container_name (Standard "homeapp"); muss auf dem Host eindeutig sein
+#   - Netzwerk:       Name homeapp_net, Subnetz 172.40.0.0/24, Gateway und ipv4_address (ganz unten bzw.
+#                     unter "networks"); das Subnetz darf sich mit keinem anderen Docker-Netz überschneiden
+#   - Image-Name:     image (Standard homeapp:latest), damit nicht zwei Projekte dasselbe Image überschreiben
+#   - Projektordner / Projektname im Container Manager: eigener Ordner je Installation
 services:
   homeapp:
     build: .
@@ -17,8 +26,9 @@ services:
     container_name: homeapp
     restart: unless-stopped
     ports:
-      # links: Port auf der Synology (8080 ist dort bereits belegt), rechts: Port im Container
-      - "8095:8080"
+      # links: Port auf der Synology (8080 ist dort häufig belegt; über HOMEAPP_PORT in .env änderbar),
+      # rechts: Port im Container (nicht ändern)
+      - "${HOMEAPP_PORT:-8095}:8080"
     # Feste IP im eigenen Docker-Netzwerk (siehe "networks" unten): 172.40.0.10
     # Erreichbar ist sie von der Synology selbst und von anderen Containern im selben Netzwerk
     # (z. B. https://172.40.0.10:8080). Aus dem LAN weiterhin über https://<IP-der-Synology>:8095.
@@ -53,7 +63,11 @@ services:
       SS_VERIFY_SSL: ${SS_VERIFY_SSL:-}
 
 # Eigenes Bridge-Netzwerk 172.40.0.0/24 (Gateway 172.40.0.1); der Container bekommt 172.40.0.10.
-# Existiert das Netzwerk bereits (z. B. von einem anderen Projekt), ersetze den Block durch:
+# Meldet Docker „Pool overlaps with other one on this address space“ oder läuft bereits eine zweite
+# HomeApp mit diesem Netz, gibt es zwei Wege:
+#   a) eigenes, freies Subnetz – dann alle drei Werte zusammen ändern, z. B. subnet 172.41.0.0/24,
+#      gateway 172.41.0.1 und oben ipv4_address 172.41.0.10;
+#   b) ein vorhandenes Netzwerk mitbenutzen (ipv4_address muss darin frei sein) – Block ersetzen durch:
 #   networks:
 #     homeapp_net:
 #       external: true

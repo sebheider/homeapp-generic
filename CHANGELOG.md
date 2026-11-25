@@ -17,6 +17,7 @@ Module: integrierte Funktionen abschalten, externe Module installieren – und H
 
 ### Geändert
 - **`docker compose up -d --build` funktioniert direkt aus dem Repository:** Das `Dockerfile` installiert die npm-Pakete und baut das Frontend im Container (bisher `Dockerfile.full`); vorher muss nichts mehr erstellt werden – auch nicht für den Synology Container Manager. Die bisherige Variante ohne npm im Container heißt jetzt `Dockerfile.prebuilt` und ist nur noch für ältere Docker-Versionen gedacht, bei denen `npm ci` mit „Exit handler never called!“ abbricht.
+- Der (leere) Ordner `data/` ist im Repository enthalten, weil der Synology Container Manager den Datenordner nicht selbst anlegt. `HOMEAPP_PORT` in der `.env` gilt jetzt für alle Compose-Dateien. README und Compose-Dateien beschreiben, welche Werte (Port, Containername, Netzwerk, Image, Projektordner) bei mehreren Installationen auf einem Host anzupassen sind.
 
 ### Sicherheit
 - Ändernde API-Anfragen und WebSocket-Verbindungen von abgeschotteten Seiten (`Origin: null`) und fremden Websites (`Sec-Fetch-Site: cross-site`) werden abgelehnt.

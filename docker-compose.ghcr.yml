@@ -6,6 +6,13 @@
 #
 # Ablage auf der Synology: /volume1/docker/HomeApp  (Datei dort als docker-compose.yml speichern)
 # Danach: https://<IP-der-Synology>:8095
+#
+# Den Ordner "data" vorher anlegen (File Station) – der Container Manager erzeugt ihn nicht selbst.
+#
+# GGF. ANPASSEN, wenn auf dem Host schon eine HomeApp oder ein anderes Projekt läuft (Details: README →
+# „Mehrere Installationen und Konflikte“): Host-Port über HOMEAPP_PORT in .env oder unter "ports",
+# container_name (das Update-Skript im Aufgabenplaner nutzt denselben Namen), Netzwerk unten
+# (Name, Subnetz, Gateway, ipv4_address) und einen eigenen Projektordner je Installation.
 services:
   homeapp:
     # Standard: das Image dieses Repositories. Bei einem anderen Konto/Repository in .env HOMEAPP_IMAGE setzen.
@@ -13,8 +20,9 @@ services:
     container_name: homeapp
     restart: unless-stopped
     ports:
-      # links: Port auf der Synology (8080 ist dort bereits belegt), rechts: Port im Container
-      - "8095:8080"
+      # links: Port auf der Synology (8080 ist dort häufig belegt; über HOMEAPP_PORT in .env änderbar),
+      # rechts: Port im Container (nicht ändern)
+      - "${HOMEAPP_PORT:-8095}:8080"
     # Feste IP im eigenen Docker-Netzwerk (siehe "networks" unten)
     networks:
       homeapp_net:
