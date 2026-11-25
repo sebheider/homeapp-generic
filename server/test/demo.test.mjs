@@ -3,6 +3,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DemoSource } from '../src/demo.js';
 
+test('mower module can be disabled and re-enabled in demo mode', () => {
+  const demo = new DemoSource();
+  const mower = demo.content.devices.find((device) => device.type === 'mower');
+  demo.start({ mower: false });
+  assert.equal(demo.mower, null);
+  for (const id of Object.values(mower.states)) {
+    assert.equal(demo.states.has(id), false);
+    assert.equal(demo.objects.has(id), false);
+  }
+  demo.start({ mower: true });
+  assert.ok(demo.mower);
+  assert.ok(demo.states.has(mower.states.state));
+  demo.stop();
+});
+
 test('stop() cancels pending motion resets and travelling blinds', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   const demo = new DemoSource();

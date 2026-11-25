@@ -25,7 +25,7 @@ export interface TabProps {
 /* ------------------------------------------------------------ draft helpers */
 
 /** Config sections that are plain objects (as opposed to lists). */
-type ObjectSection = 'app' | 'iobroker' | 'surveillance' | 'energy' | 'weather' | 'octoprint' | 'bambu' | 'spotify';
+type ObjectSection = 'app' | 'iobroker' | 'homeassistant' | 'surveillance' | 'energy' | 'weather' | 'octoprint' | 'bambu' | 'spotify';
 
 /** Returns a setter that merges a partial update into one section of the draft. */
 export const sectionSetter =

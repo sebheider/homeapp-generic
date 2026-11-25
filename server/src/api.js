@@ -35,6 +35,12 @@ export function registerApiRoutes(app, {
   allAlerts = () => alerts.list(),
   pushover = null,
 }) {
+  for (const id of ['weather', 'printer', 'spotify']) {
+    app.use(`/api/${id}`, (_req, res, next) => {
+      if (store.effective?.modules?.[id] === false) return res.status(404).json({ error: `Modul ${id} ist deaktiviert` });
+      next();
+    });
+  }
   const stateSnapshot = () => ({ ...Object.fromEntries(getSource().states), ...(kiosk ? Object.fromEntries(kiosk.states) : {}) });
   /** Configured ids and the local kiosk datapoints. */
   const knownId = (id) => store.stateIds().has(id) || Boolean(kiosk?.states.has(id));
@@ -130,6 +136,10 @@ export function registerApiRoutes(app, {
 
   app.post('/api/discovery', async (_req, res) => {
     const source = getSource();
+    if (source.kind === 'homeassistant') {
+      if (!source.connected) return res.status(409).json({ error: 'Home Assistant ist nicht verbunden.' });
+      return res.json(source.discover());
+    }
     if (store.isDemo || !source.connected || !source.objects.size) {
       return res.status(409).json({ error: 'Die automatische Erkennung benötigt eine bestehende ioBroker-Verbindung (kein Demo-Modus).' });
     }
@@ -142,6 +152,7 @@ export function registerApiRoutes(app, {
 
   app.get('/api/iobroker/permissions', async (_req, res) => {
     const source = getSource();
+    if (source.kind === 'homeassistant') return res.status(409).json({ error: 'Die ioBroker-Schreibrechteprüfung ist für Home Assistant nicht verfügbar.' });
     if (store.isDemo) return res.status(409).json({ error: 'Im Demo-Modus nicht verfügbar.' });
     if (!source.connected) return res.status(409).json({ error: 'ioBroker ist nicht verbunden.' });
     if (!store.effective.iobroker.user) return res.json({ anonymous: true, total: 0, blocked: [], script: '' });

@@ -92,10 +92,11 @@ function StatusDot({ ok, label, title }: { ok: boolean; label: string; title?: s
 /** Connection list: server, ioBroker (or demo), Surveillance Station, 3D printer and Spotify. */
 function ConnectionStatus({ className = 'flex flex-col gap-1.5' }: { className?: string }) {
   const { status, ws } = useConnection();
+  const sourceMode = useStore((s) => s.config?.iobroker.mode);
   return (
     <div className={className}>
       <StatusDot ok={ws} label="Server" />
-      <StatusDot ok={Boolean(status?.source.connected)} label={status?.demo ? 'Demo-Daten' : 'ioBroker'} title={status?.source.error ?? undefined} />
+      <StatusDot ok={Boolean(status?.source.connected)} label={status?.demo ? 'Demo-Daten' : sourceMode === 'homeassistant' ? 'Home Assistant' : 'ioBroker'} title={status?.source.error ?? undefined} />
       {status?.surveillance.enabled && <StatusDot ok={status.surveillance.connected} label="Surveillance" title={status.surveillance.error ?? undefined} />}
       {status?.printer?.enabled && <StatusDot ok={status.printer.connected} label="3D-Drucker" title={status.printer.error ?? undefined} />}
       {status?.spotify?.enabled && <StatusDot ok={status.spotify.connected} label="Spotify" title={status.spotify.error ?? undefined} />}

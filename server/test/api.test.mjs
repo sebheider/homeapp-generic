@@ -3,6 +3,25 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import { registerApiRoutes } from '../src/api.js';
 
+test('disabled modules reject direct API requests', async (t) => {
+  const app = express();
+  registerApiRoutes(app, {
+    store: { effective: { modules: { weather: false, printer: false, spotify: false } } },
+    getSource: () => ({ states: new Map() }),
+    motion: { recent: [] }, alerts: { list: () => [] },
+    printer: { data: null }, spotify: { current: () => null },
+    statusPayload: () => ({}), cameraList: () => [],
+  });
+  const server = app.listen(0);
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.once('listening', resolve));
+  for (const id of ['weather', 'printer', 'spotify']) {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/${id}`);
+    assert.equal(response.status, 404);
+    assert.match((await response.json()).error, /deaktiviert/);
+  }
+});
+
 test('API routes use the active source and only accept configured state ids', async (t) => {
   const writes = [];
   const source = {

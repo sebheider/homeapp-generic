@@ -244,7 +244,11 @@ function WidgetView({ w, o, energy }: { w: Widget; o: Overview; energy: EnergyVa
   const cameras = useStore((s) => s.cameras);
   const scenes = useStore((s) => s.config?.scenes.length ?? 0);
   const printer = useStore((s) => Boolean(s.printer?.enabled));
+  const modules = useStore((s) => s.config?.modules);
   const scale = useContext(HudScale);
+  if ((w.type === 'weather' || w.type === 'weatherPart') && modules?.weather === false) return <WidgetNote type={w.type} text="Das Wettermodul ist deaktiviert." />;
+  if (w.type === 'printer' && modules?.printer === false) return <WidgetNote type="printer" text="Das Druckermodul ist deaktiviert." />;
+  if (w.type === 'spotify' && modules?.spotify === false) return <WidgetNote type="spotify" text="Das Spotify-Modul ist deaktiviert." />;
   switch (w.type) {
     case 'clock':
       return <ClockWidget o={o} energy={energy} chips={w.options.chips !== false} />;

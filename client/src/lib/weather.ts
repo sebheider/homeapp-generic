@@ -98,10 +98,11 @@ const NO_IDS: Record<string, string> = {};
 /** Values of the local weather station, already converted (wind in km/h); undefined when not mapped / not available. */
 export function useLocalWeather(): LocalWeather {
   const cfg = useStore((s) => s.config?.weather);
+  const moduleEnabled = useStore((s) => s.config?.modules?.weather !== false);
   // only the mapped datapoints are subscribed, other value changes do not re-render
   const vals = useStateValues(cfg?.states ?? NO_IDS);
   const local: LocalWeather = {};
-  if (!cfg) return local;
+  if (!cfg || !moduleEnabled) return local;
   for (const f of WEATHER_FIELDS) {
     const v = vals[f.key];
     if (v === undefined || v === null || v === '' || Number.isNaN(Number(v))) continue;
@@ -144,6 +145,7 @@ export function useWeatherData() {
   const lat = useStore((s) => s.config?.weather?.latitude);
   const lon = useStore((s) => s.config?.weather?.longitude);
   const enabled = useStore((s) => s.config?.weather?.enabled ?? true);
+  const moduleEnabled = useStore((s) => s.config?.modules?.weather !== false);
   const demo = useStore((s) => s.status?.demo);
   const key = `${lat}|${lon}|${demo}`;
   const cached = shared.key === key ? shared.data : null;
@@ -184,5 +186,5 @@ export function useWeatherData() {
     load(true);
   }, [load]);
 
-  return { data, error, loading, reload };
+  return { data: moduleEnabled ? data : null, error: moduleEnabled ? error : null, loading: moduleEnabled && loading, reload };
 }

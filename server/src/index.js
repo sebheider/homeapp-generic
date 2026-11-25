@@ -27,6 +27,7 @@ import express from 'express';
 import { WebSocketServer } from 'ws';
 import { ConfigStore, DATA_DIR } from './config.js';
 import { IoBrokerSource } from './iobroker.js';
+import { HomeAssistantSource } from './homeassistant.js';
 import { DemoSource } from './demo.js';
 import { SurveillanceClient } from './synology.js';
 import { History } from './history.js';
@@ -60,6 +61,7 @@ const DEMO_RADAR_MS = 250; // live frames of the simulated radar (like a real ag
 const authorized = basicAuth(AUTH_USER, AUTH_PASS);
 const store = new ConfigStore(); // persisted configuration (+ environment overrides)
 const iobroker = new IoBrokerSource(); // real ioBroker connection
+const homeassistant = new HomeAssistantSource();
 const demo = new DemoSource(); // simulated installation for demo mode
 const surveillance = new SurveillanceClient();
 const history = new History(); // minute-resolution time series of numeric states
@@ -88,6 +90,7 @@ const ventilation = new VentilationService({
   getValue: valueOf,
   // outdoor values when there is no weather station: current conditions of the internet weather
   fetchOutdoor: async () => {
+    if (!store.effective.modules.weather) return null;
     const w = store.effective.weather;
     const pos = validCoords(w?.latitude, w?.longitude);
     const f = pos ? await weather.forecast(pos.lat, pos.lon) : store.isDemo ? demoForecast() : null;
@@ -158,6 +161,7 @@ function wireSource(src) {
   src.on('connection', broadcastStatus);
 }
 wireSource(iobroker);
+wireSource(homeassistant);
 wireSource(demo);
 kiosk.on('state', (id, entry) => {
   queueState(id, entry);
@@ -265,13 +269,18 @@ spotify.on('token', (refreshToken) => store.setSpotifyAuth({ refreshToken }));
 function applyConfig() {
   const cfg = store.effective;
   iobroker.stop();
+  homeassistant.stop();
   demo.stop();
   dropPendingStates(); // browsers reload all values after the `config` message below
   motion.prev.clear(); // the new source's first values must not count as "motion started"
   if (cfg.iobroker.mode === 'demo') {
     source = demo;
-    demo.start();
+    demo.start({ mower: cfg.modules.mower });
     surveillance.configure(null);
+  } else if (cfg.iobroker.mode === 'homeassistant') {
+    source = homeassistant;
+    homeassistant.start(cfg.homeassistant);
+    surveillance.configure(cfg.surveillance, store.takeOtp());
   } else {
     source = iobroker;
     iobroker.start(cfg.iobroker);
@@ -280,8 +289,8 @@ function applyConfig() {
   // the kiosk datapoints are local, ioBroker does not know them
   source.setIds([...store.stateIds()].filter((id) => !isKioskId(id)));
   // OctoPrint does not depend on ioBroker; it only reconnects when its connection settings changed
-  printer.configure(cfg.octoprint, { demo: cfg.iobroker.mode === 'demo', bambu: cfg.bambu });
-  spotify.configure(cfg.spotify, { demo: cfg.iobroker.mode === 'demo' });
+  printer.configure(cfg.modules.printer ? cfg.octoprint : { ...cfg.octoprint, enabled: false }, { demo: cfg.modules.printer && store.isDemo, bambu: cfg.bambu });
+  spotify.configure(cfg.modules.spotify ? cfg.spotify : { ...cfg.spotify, enabled: false }, { demo: cfg.modules.spotify && store.isDemo });
   // re-evaluate the notifications with the new rules (the demo has all its values right away);
   // alarms that still wait for their acknowledgement are kept
   alertRules = sanitizeAlerts(cfg.alerts);
@@ -431,7 +440,8 @@ store.on('change', applyConfig);
 store.on('dashboard', (dashboard) => broadcast({ t: 'dashboard', dashboard }));
 applyConfig();
 server.listen(PORT, () => {
-  console.log(`HomeApp läuft auf ${httpsEnabled() ? 'https' : 'http'}://…:${PORT} (${store.isDemo ? 'Demo-Modus' : 'ioBroker-Modus'})`);
+  const mode = store.isDemo ? 'Demo' : store.effective.iobroker.mode === 'homeassistant' ? 'Home Assistant' : 'ioBroker';
+  console.log(`HomeApp läuft auf ${httpsEnabled() ? 'https' : 'http'}://…:${PORT} (${mode})`);
   if (AUTH_USER || AUTH_PASS) console.log('Zugriffsschutz (Basic Auth) ist aktiv.');
 });
 
@@ -439,6 +449,9 @@ server.listen(PORT, () => {
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {
     history.stop();
+    homeassistant.stop();
+    iobroker.stop();
+    demo.stop();
     alerts.stop();
     printer.stop();
     spotify.stop();

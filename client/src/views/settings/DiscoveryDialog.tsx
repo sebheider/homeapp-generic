@@ -47,7 +47,7 @@ export function DiscoveryDialog({ draft, setDraft, onClose }: { draft: AppConfig
   return (
     <Modal open onClose={onClose} title="Automatische Erkennung">
       {error && <p className="text-rose-400 text-sm">{error}</p>}
-      {!error && !found && <p className="text-muted text-sm">Durchsuche ioBroker … das kann einen Moment dauern.</p>}
+      {!error && !found && <p className="text-muted text-sm">Durchsuche die Datenquelle … das kann einen Moment dauern.</p>}
       {found && (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted">Gefunden wurden {found.devices.length} Geräte in {found.rooms.length} Räumen, {found.scenes.length} Szenen{found.energy ? ' und ein Energiesystem' : ''}.</p>

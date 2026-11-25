@@ -35,6 +35,7 @@ import { sanitizeKiosk } from './kiosk.js';
 import { sanitizeWaste } from './waste.js';
 import { sanitizeVentilation, ventilationStateIds } from './ventilation.js';
 import { sanitizePushover } from './pushover.js';
+import { sanitizeModules } from './modules.js';
 
 export const DATA_DIR = path.resolve(process.env.DATA_DIR || './data');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
@@ -69,6 +70,8 @@ const defaults = () => ({
     popupLiveVideo: true, // motion pop-up shows the MJPEG live stream instead of refreshing pictures
   },
   iobroker: { mode: 'demo', host: '', port: 8081, secure: false, protocol: 'ws', user: '', password: '', verifySsl: false },
+  homeassistant: { url: '', token: '', verifySsl: true },
+  modules: sanitizeModules(),
   surveillance: {
     enabled: false,
     host: '',
@@ -150,6 +153,9 @@ const ENV_FIELDS = [
   ['IOBROKER_USER', 'iobroker.user', 'string'],
   ['IOBROKER_PASSWORD', 'iobroker.password', 'string', true],
   ['IOBROKER_VERIFY_SSL', 'iobroker.verifySsl', 'bool'],
+  ['HOMEASSISTANT_URL', 'homeassistant.url', 'string'],
+  ['HOMEASSISTANT_TOKEN', 'homeassistant.token', 'string', true],
+  ['HOMEASSISTANT_VERIFY_SSL', 'homeassistant.verifySsl', 'bool'],
   ['SS_HOST', 'surveillance.host', 'string'],
   ['SS_PORT', 'surveillance.port', 'number'],
   ['SS_HTTPS', 'surveillance.https', 'bool'],
@@ -200,6 +206,7 @@ const envKey = (e = process.env) => [...ENV_FIELDS.map(([env]) => e[env] ?? ''),
 /** Effective configuration: stored values + environment defaults; in demo mode the sample installation. */
 function buildEffective(raw, userSet) {
   const cfg = applyEnv(raw, userSet);
+  cfg.modules = sanitizeModules(cfg.modules);
   if (cfg.iobroker.mode === 'demo') {
     const demo = demoContent();
     cfg.rooms = demo.rooms;
@@ -211,6 +218,8 @@ function buildEffective(raw, userSet) {
     // sample notifications, unless the user already defined own ones
     if (!cfg.alerts.length) cfg.alerts = demo.alerts;
   }
+  if (!cfg.modules.weather) cfg.weather.enabled = false;
+  if (!cfg.modules.mower) cfg.devices = cfg.devices.filter((device) => device.type !== 'mower');
   return cfg;
 }
 
@@ -223,7 +232,7 @@ function collectStateIds(cfg) {
   const add = (id) => id && ids.add(id);
   for (const d of cfg.devices) Object.values(d.states || {}).forEach(add);
   Object.values(cfg.energy?.states || {}).forEach(add);
-  Object.values(cfg.weather?.states || {}).forEach(add);
+  if (cfg.modules?.weather !== false) Object.values(cfg.weather?.states || {}).forEach(add);
   for (const c of cfg.cameras) {
     add(c.motionState);
     add(c.peopleState);
@@ -251,6 +260,8 @@ function maskSecrets(cfg) {
   delete cfg.surveillance.deviceId;
   cfg.iobroker.passwordSet = Boolean(cfg.iobroker.password);
   delete cfg.iobroker.password;
+  cfg.homeassistant.tokenSet = Boolean(cfg.homeassistant.token);
+  delete cfg.homeassistant.token;
   cfg.octoprint.apiKeySet = Boolean(cfg.octoprint.apiKey);
   delete cfg.octoprint.apiKey;
   cfg.bambu.accessCodeSet = Boolean(cfg.bambu.accessCode);
@@ -293,6 +304,7 @@ export class ConfigStore extends EventEmitter {
     this.raw.waste = sanitizeWaste(this.raw.waste);
     this.raw.ventilation = sanitizeVentilation(this.raw.ventilation);
     this.raw.pushover = sanitizePushover(this.raw.pushover);
+    this.raw.modules = sanitizeModules(this.raw.modules);
     // files from before the tracking: derive the manually set fields once and remember them
     this.userSet = stored ? new Set(stored) : this.fileExisted ? inferUserSet(this.raw) : new Set();
     // a newly generated token must be stored, otherwise it would change with every restart
@@ -394,6 +406,8 @@ export class ConfigStore extends EventEmitter {
     // secrets the browser does not know (empty = unchanged) are kept
     if (!next.surveillance?.password) merged.surveillance.password = this.raw.surveillance.password;
     if (!next.iobroker?.password) merged.iobroker.password = this.raw.iobroker.password;
+    if (!next.homeassistant?.token) merged.homeassistant.token = this.raw.homeassistant.token;
+    delete merged.homeassistant.tokenSet;
     merged.octoprint = sanitizeOctoPrint(merged.octoprint);
     if (!next.octoprint?.apiKey) merged.octoprint.apiKey = this.raw.octoprint.apiKey;
     merged.bambu = sanitizeBambu(merged.bambu);
@@ -414,6 +428,7 @@ export class ConfigStore extends EventEmitter {
     merged.waste = sanitizeWaste(merged.waste);
     merged.ventilation = sanitizeVentilation(merged.ventilation);
     merged.pushover = sanitizePushover(merged.pushover);
+    merged.modules = sanitizeModules(merged.modules);
     if (!next.pushover?.user) merged.pushover.user = this.raw.pushover.user;
     if (!next.pushover?.token) merged.pushover.token = this.raw.pushover.token;
     merged.devices = (merged.devices || []).filter((d) => d && d.id && d.type);

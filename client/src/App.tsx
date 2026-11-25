@@ -153,6 +153,10 @@ function Toasts({ raised }: { raised: boolean }) {
 
 /** Component of the current view. */
 function Page({ view }: { view: View }) {
+  const modules = useStore((s) => s.config?.modules);
+  if ((view === 'weather' || view === 'printer' || view === 'spotify' || view === 'mower') && modules?.[view] === false) {
+    return <div className="glass p-6">Dieses Modul ist deaktiviert. Es kann unter Einstellungen → Module aktiviert werden.</div>;
+  }
   switch (view) {
     case 'home': return <Dashboard />;
     case 'weather': return <WeatherView />;

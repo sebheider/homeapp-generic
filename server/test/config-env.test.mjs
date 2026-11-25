@@ -28,6 +28,40 @@ test('empty variables count as not set', () => {
   assert.equal(envSources().size, 0);
 });
 
+test('Home Assistant token is masked and retained; optional modules survive restart', () => {
+  const store = new ConfigStore();
+  const cfg = editor(store);
+  cfg.iobroker.mode = 'homeassistant';
+  cfg.homeassistant.url = 'http://example.test:8123';
+  cfg.homeassistant.token = 'example-secret';
+  cfg.modules.printer = false;
+  cfg.modules.mower = false;
+  store.update(cfg);
+  assert.equal(store.effective.homeassistant.token, 'example-secret');
+  assert.equal(store.publicConfig().homeassistant.token, undefined);
+  assert.equal(store.editableConfig().homeassistant.tokenSet, true);
+  const again = new ConfigStore();
+  assert.equal(again.effective.modules.printer, false);
+  assert.equal(again.editableConfig().modules.mower, false);
+  again.update(editor(again));
+  assert.equal(again.effective.homeassistant.token, 'example-secret');
+});
+
+test('disabled mower module filters devices only from effective configuration', () => {
+  const store = new ConfigStore();
+  const cfg = editor(store);
+  cfg.iobroker.mode = 'socketio';
+  cfg.devices = [{ id: 'm', type: 'mower', states: {} }];
+  cfg.modules.mower = false;
+  store.update(cfg);
+  assert.equal(store.effective.devices.length, 0);
+  assert.equal(store.editableConfig().devices.length, 1);
+  const enabled = editor(store);
+  enabled.modules.mower = true;
+  store.update(enabled);
+  assert.equal(store.effective.devices.length, 1);
+});
+
 test('a host variable implies live mode and Surveillance Station', () => {
   setEnv({ IOBROKER_HOST: '10.0.0.1', SS_HOST: '10.0.0.2' });
   const s = envSources();

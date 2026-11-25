@@ -509,7 +509,7 @@ export interface AppConfig {
     popupLiveVideo?: boolean;
   };
   iobroker: {
-    mode: 'demo' | 'socketio';
+    mode: 'demo' | 'socketio' | 'homeassistant';
     host: string;
     port: number;
     secure: boolean;
@@ -519,6 +519,8 @@ export interface AppConfig {
     passwordSet?: boolean;
     verifySsl?: boolean;
   };
+  homeassistant: { url: string; token?: string; tokenSet?: boolean; verifySsl: boolean };
+  modules: { weather: boolean; printer: boolean; spotify: boolean; mower: boolean };
   surveillance: SurveillanceConfig;
   /** 3D printer (shared settings and OctoPrint connection). */
   octoprint: OctoPrintConfig;

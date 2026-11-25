@@ -35,7 +35,7 @@ export function DevicesTab({ draft, setDraft }: TabProps) {
     <>
       <div className="flex flex-wrap gap-2 mb-4">
         <input className="field !w-auto flex-1 min-w-40" placeholder="Geräte filtern …" value={q} onChange={(e) => setQ(e.target.value)} />
-        <button className="btn" disabled={!connected} title={connected ? '' : 'Benötigt eine Live-Verbindung zum ioBroker'} onClick={() => setDiscovering(true)}><ScanSearch size={16} /> Automatisch erkennen</button>
+        <button className="btn" disabled={!connected} title={connected ? '' : 'Benötigt eine Live-Verbindung zur Datenquelle'} onClick={() => setDiscovering(true)}><ScanSearch size={16} /> Automatisch erkennen</button>
         <button className="btn primary" disabled={draft.rooms.length === 0} title={draft.rooms.length === 0 ? 'Lege zuerst einen Raum an' : ''} onClick={addDevice}>
           <Plus size={16} /> Gerät
         </button>

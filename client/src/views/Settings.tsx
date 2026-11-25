@@ -26,8 +26,9 @@ import { KioskTab } from './settings/KioskTab';
 import { WasteTab } from './settings/WasteTab';
 import { VentilationTab } from './settings/VentilationTab';
 import { PushoverTab } from './settings/PushoverTab';
+import { ModulesTab } from './settings/ModulesTab';
 
-type Tab = 'connection' | 'devices' | 'rooms' | 'layout' | 'scenes' | 'cameras' | 'printer' | 'spotify' | 'energy' | 'weather' | 'alerts' | 'display' | 'general' | 'kiosk' | 'waste' | 'ventilation' | 'pushover';
+type Tab = 'modules' | 'connection' | 'devices' | 'rooms' | 'layout' | 'scenes' | 'cameras' | 'printer' | 'spotify' | 'energy' | 'weather' | 'alerts' | 'display' | 'general' | 'kiosk' | 'waste' | 'ventilation' | 'pushover';
 
 /** Tabs in display order with their components. */
 const TABS: { id: Tab; label: string; group: string; description: string; icon: LucideIcon; Component: ComponentType<TabProps> }[] = [
@@ -47,7 +48,8 @@ const TABS: { id: Tab; label: string; group: string; description: string; icon: 
   { id: 'kiosk', label: 'Kiosk-Sensoren', group: 'Funktionen', description: 'Präsenzradar LD2410, Lichtsensor und CO₂-Sensor am Raspberry Pi: Display aus bei Abwesenheit, Helligkeit nach Umgebungslicht.', icon: Radar, Component: KioskTab },
   { id: 'energy', label: 'Energie', group: 'Funktionen', description: 'Solar, Batterie, Stromnetz und Verbrauch zuordnen.', icon: Zap, Component: EnergyTab },
   { id: 'general', label: 'Allgemein & App', group: 'System', description: 'App-Name, Version, Neuigkeiten und Installation.', icon: Info, Component: GeneralTab },
-  { id: 'connection', label: 'Verbindungen & Zugriff', group: 'System', description: 'ioBroker, Surveillance Station und Schreibzugriff einrichten.', icon: Network, Component: ConnectionTab },
+  { id: 'modules', label: 'Module', group: 'System', description: 'Optionale Funktionen aktivieren und deaktivieren.', icon: Plug, Component: ModulesTab },
+  { id: 'connection', label: 'Verbindungen & Zugriff', group: 'System', description: 'Datenquelle und Surveillance Station einrichten.', icon: Network, Component: ConnectionTab },
 ];
 const GROUPS = [...new Set(TABS.map((t) => t.group))];
 

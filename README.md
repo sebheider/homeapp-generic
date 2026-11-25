@@ -1,9 +1,10 @@
 # HomeApp
 
-Moderne Smart-Home-Oberfläche mit **ioBroker** und optionaler **Synology Surveillance Station**.
+Moderne Smart-Home-Oberfläche mit **ioBroker** oder **Home Assistant** und optionaler **Synology Surveillance Station**.
 Läuft als einzelner Container (React-Frontend + Node.js-Server) auf Systemen mit Docker Compose,
-einschließlich Synology. Ohne ioBroker ist der Demo-Modus nutzbar; eine andere Smart-Home-Plattform
-als Live-Datenquelle wird derzeit nicht unterstützt.
+einschließlich Synology. Ohne Verbindung ist der Demo-Modus nutzbar. Home Assistant unterstützt
+derzeit Entity-Zuordnungen und ausgewählte Steuerbefehle; die vollständige Geräteabdeckung von
+ioBroker ist dort noch nicht verfügbar.
 
 ## Herkunft und Entwicklung
 
@@ -20,8 +21,7 @@ Beiträge und KI-Unterstützung sind in der Historie des Ursprungsprojekts anhan
 Co-Author-Trailern dokumentiert. Die Anwendung kombiniert ein React-/TypeScript-Frontend mit einem
 Node.js-/Express-Backend, REST und WebSockets. Tests für Backend, Frontend und den optionalen
 Kiosk-Agenten sowie automatisierte Container-Builds unterstützen die Weiterentwicklung. Der Quellcode
-ist nicht automatisch für weitere Plattformen austauschbar: ioBroker bleibt derzeit die einzige
-unterstützte Live-Datenquelle für Smart-Home-Datenpunkte.
+verwendet für Smart-Home-Datenpunkte entweder ioBroker oder Home Assistant als Datenquelle.
 
 - 🛰️ **Übersicht als Kommandozentrale** – animierte Live-Anzeigen auf einen Blick: Uhr, „Home Core“ mit dem Zustand des Hauses, Wetter mit UV-Index und UV-Prognose, Rundinstrumente für Batterie (Flüssigkeitsanzeige), Licht und Wärmepumpe, Energiefluss mit 24-h-Kurve (während der Mähroboter mäht, stattdessen seine Live-Karte), Kameras mit Aktivitäts-Zeitleiste und alle Räume als leuchtende Kacheln
 - 🧊 **Design „Nexus“ (wählbar)** – holografischer digitaler Zwilling des Hauses mit schwebenden Etagen, Live-Werten an den Räumen, Hinweisen, Energie-Wellenform und Cockpit-Panels
@@ -76,6 +76,7 @@ Ohne Konfiguration startet die App im **Demo-Modus** mit einer simulierten Insta
 21. [API](#api)
 22. [Fehlersuche](#fehlersuche)
 23. [Herkunft und Entwicklung](#herkunft-und-entwicklung)
+24. [Home Assistant](#home-assistant)
 
 ---
 
@@ -119,6 +120,32 @@ Ein Betrieb ohne Docker ist ebenfalls möglich: Node.js 20.19+ (20.x) oder 22.12
 Danach `npm start` in `server` starten. OpenSSL wird benötigt, wenn das HTTPS-Zertifikat automatisch
 erzeugt werden soll; ffmpeg nur für bestimmte Bambu-Lab-Kameras. `DATA_DIR` ist ohne Vorgabe relativ
 zum Startverzeichnis (`./data`). Für lokale Entwicklung siehe [Entwicklung](#entwicklung).
+
+---
+
+## Home Assistant
+
+Unter **Einstellungen → Verbindungen & Zugriff** als Datenquelle „Live (Home Assistant)“ wählen,
+die HTTP(S)-Adresse und ein im Home-Assistant-Profil erstelltes langlebiges Zugriffstoken eintragen
+und speichern. HomeApp verbindet sich über die Home-Assistant-WebSocket-API; das Token bleibt auf dem
+Server und wird nicht an den Browser zurückgegeben. HTTPS und Zertifikatsprüfung sind empfohlen.
+Alternativ können `HOMEASSISTANT_URL`, `HOMEASSISTANT_TOKEN` und `HOMEASSISTANT_VERIFY_SSL` als
+Vorgaben gesetzt werden; die Datenquelle muss in den Einstellungen gewählt werden.
+
+Unter **Geräte** schlägt die automatische Erkennung unterstützte Lichter, Schalter, Rollläden,
+Thermostate, Sensoren und Szenen vor; Geräte werden zunächst einem gemeinsamen Raum „Home Assistant“ zugeordnet.
+Bei ausgeschalteten Lichtern fehlen mitunter Helligkeitsattribute; Zuordnungen dann manuell ergänzen.
+Entities lassen sich auch über die Datenpunktsuche manuell zuordnen. Die ID einer Entity
+ist beispielsweise `light.wohnzimmer`, ein Attribut etwa `light.wohnzimmer#brightness`. Numerische
+und Ein/Aus-Werte werden umgewandelt; `unknown` und `unavailable` erscheinen als nicht verfügbar.
+Unterstützt werden Ein/Aus für `light`, `switch`, `input_boolean` und `fan`, Helligkeit,
+Rollladenposition, Klima-Solltemperatur sowie `number`/`input_number` und
+`select`/`input_select`; außerdem Klima-Betriebsart, Lüfterstufe, RGB-Lichtfarbe und
+Lüfter-Prozentwert. Andere Schreibzugriffe liefern einen Fehler statt einen unbekannten
+Service aufzurufen. Szenen und Buttons können mit dem Wert `true` ausgelöst werden.
+Die ioBroker-Rechteprüfung und ioBroker-spezifische
+Mähroboter-Datenpunkte stehen für Home Assistant derzeit nicht zur Verfügung. Nicht alle
+Home-Assistant-Domänen und -Attribute sind somit wie ioBroker bedienbar.
 
 ---
 
@@ -774,6 +801,7 @@ Eine Änderung der `.env` wirkt erst, wenn das Projekt neu erstellt wird (ein Ne
 | `IOBROKER_HOST`, `IOBROKER_PORT`, `IOBROKER_SECURE` | ioBroker-Adresse (`IOBROKER_HOST` schaltet automatisch auf Live) |
 | `IOBROKER_PROTOCOL` | `ws` oder `socketio` |
 | `IOBROKER_USER`, `IOBROKER_PASSWORD`, `IOBROKER_VERIFY_SSL` | Anmeldung / Zertifikatsprüfung |
+| `HOMEASSISTANT_URL`, `HOMEASSISTANT_TOKEN`, `HOMEASSISTANT_VERIFY_SSL` | Home-Assistant-Adresse, langlebiges Zugriffstoken und Zertifikatsprüfung |
 | `SS_HOST`, `SS_PORT`, `SS_HTTPS` | Surveillance Station (`SS_HOST` aktiviert sie) |
 | `SS_ACCOUNT`, `SS_PASSWORD`, `SS_VERIFY_SSL` | Anmeldung / Zertifikatsprüfung |
 | `SS_DEVICE_ID` | Geräte-Token von DSM (2FA), normalerweise nicht nötig – die App speichert es selbst |
@@ -847,8 +875,14 @@ Der Push auf `main` baut das Docker-Image, der Tag erzeugt automatisch ein GitHu
 
 ## Erweiterbarkeit und Plugin-Aufwand
 
-Ein Plugin-System ist noch nicht implementiert. Seiten wie Wetter, Drucker und Mähroboter werden
-bereits teilweise erst beim Öffnen als Frontend-Code geladen; das ist jedoch kein Plugin-Mechanismus.
+Unter **Einstellungen → Module** können Wetter, 3D-Drucker, Spotify und Mähroboter unabhängig
+deaktiviert und später mit ihren bisherigen Einstellungen wieder aktiviert werden. Wetter-, Drucker-
+und Spotify-API-Anfragen werden bei deaktiviertem Modul abgelehnt; Drucker und Spotify werden
+getrennt. Der Mähroboter wird aus der aktiven Gerätekonfiguration entfernt. Die Einstellungen
+bleiben gespeichert. Andere Funktionen sind weiterhin fest eingebaut.
+
+Dies ist eine interne Modulsteuerung, **kein Installationsmechanismus für externe Plugins**. Seiten
+wie Wetter, Drucker und Mähroboter werden teilweise erst beim Öffnen als Frontend-Code geladen.
 Navigation, Dashboard-Widgets, Einstellungen und Datentypen sind fest mit ihnen verdrahtet. Im
 Backend sind Dienste, Konfiguration, API, Status und Ereignisse zentral registriert. Beispielsweise
 nutzt die Lüftung das Wetter, der Mähroboter ioBroker-Datenpunkte und der Drucker zusätzlich

@@ -36,18 +36,24 @@ export class DemoSource extends EventEmitter {
   }
 
   /** Loads the start values, builds the object list for the datapoint search and starts the simulation. */
-  start() {
+  start({ mower: mowerEnabled = true } = {}) {
     this.stop();
+    this.states.clear();
+    this.objects.clear();
     const now = Date.now();
     for (const [id, val] of Object.entries(demoInitialStates())) this.states.set(id, { val, ts: now, ack: true });
     // robotic mower: its own simulation; the buttons are booleans like those of the navimow adapter
-    const mower = this.content.devices.find((d) => d.type === 'mower');
+    const mower = mowerEnabled ? this.content.devices.find((d) => d.type === 'mower') : null;
     this.mower = mower ? new DemoMower(mower.states) : null;
     if (this.mower) {
       for (const [id, val] of this.mower.entries(now)) this.states.set(id, { val, ts: now, ack: true });
       for (const key of MOWER_COMMANDS) if (key !== 'station' && mower.states[key]) this.states.set(mower.states[key], { val: false, ts: now, ack: true });
     }
     for (const d of this.content.devices) {
+      if (!mowerEnabled && d.type === 'mower') {
+        for (const id of Object.values(d.states)) this.states.delete(id);
+        continue;
+      }
       for (const [key, id] of Object.entries(d.states)) {
         this.objects.set(id, { id, name: `${d.name} ${key}`, type: typeof this.states.get(id)?.val, role: key, write: true });
       }

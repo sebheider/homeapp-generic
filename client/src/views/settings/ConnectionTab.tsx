@@ -40,6 +40,8 @@ export function ConnectionTab({ draft, setDraft, webhookToken, envDefaults, rese
   const io = draft.iobroker;
   const ss = draft.surveillance;
   const setIo = sectionSetter(draft, setDraft, 'iobroker');
+  const ha = draft.homeassistant;
+  const setHa = sectionSetter(draft, setDraft, 'homeassistant');
   const setSs = sectionSetter(draft, setDraft, 'surveillance');
   const note = (field: string) => <EnvNote field={field} envDefaults={envDefaults} resetEnv={resetEnv} toggleReset={toggleReset} />;
   const reasonStats = status?.surveillance.reasonStats ?? {};
@@ -47,17 +49,19 @@ export function ConnectionTab({ draft, setDraft, webhookToken, envDefaults, rese
   return (
     <>
       <Card
-        title="ioBroker"
+        title="Datenquelle"
         right={<span className={`chip ${status?.source.connected ? 'on' : ''}`} style={{ ['--tone' as string]: status?.source.connected ? '#10b981' : undefined }}>{status?.demo ? 'Demo' : status?.source.connected ? 'Verbunden' : 'Getrennt'}</span>}
       >
         {status && !status.demo && status.source.error && <p className="text-sm text-rose-400 mb-3">{status.source.error}</p>}
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Betriebsart" hint="Demo zeigt simulierte Beispieldaten, Live verbindet mit deinem ioBroker." note={note('iobroker.mode')}>
-            <select className="field" value={io.mode} onChange={(e) => setIo({ mode: e.target.value as 'demo' | 'socketio' })}>
+          <Field label="Betriebsart" hint="Wähle die Datenquelle für die Geräte." note={note('iobroker.mode')}>
+            <select className="field" value={io.mode} onChange={(e) => setIo({ mode: e.target.value as 'demo' | 'socketio' | 'homeassistant' })}>
               <option value="demo">Demo (Beispieldaten)</option>
               <option value="socketio">Live (ioBroker)</option>
+              <option value="homeassistant">Live (Home Assistant)</option>
             </select>
           </Field>
+          {io.mode !== 'homeassistant' && <>
           <Field label="Protokoll" hint="ws: Admin ab v6 / ws-Adapter. socketio: klassischer web- oder socketio-Adapter." note={note('iobroker.protocol')}>
             <select className="field" value={io.protocol ?? 'ws'} onChange={(e) => setIo({ protocol: e.target.value as 'ws' | 'socketio' })}>
               <option value="ws">WebSocket (ws)</option>
@@ -71,12 +75,24 @@ export function ConnectionTab({ draft, setDraft, webhookToken, envDefaults, rese
           <Field label="Passwort" hint={io.passwordSet ? 'Gespeichert – leer lassen, um es zu behalten.' : undefined} note={note('iobroker.password')}>
             <input className="field" type="password" autoComplete="new-password" value={io.password ?? ''} placeholder={io.passwordSet ? '••••••••' : ''} onChange={(e) => setIo({ password: e.target.value })} />
           </Field>
+          </>}
+          {io.mode === 'homeassistant' && <>
+            <Field label="Home-Assistant-Adresse" hint="Vollständige URL, z. B. https://homeassistant.local:8123" note={note('homeassistant.url')}>
+              <input className="field" value={ha.url} placeholder="http://homeassistant.local:8123" onChange={(e) => setHa({ url: e.target.value })} />
+            </Field>
+            <Field label="Langlebiges Zugriffstoken" hint={ha.tokenSet ? 'Gespeichert – leer lassen, um es zu behalten.' : 'In deinem Home-Assistant-Profil erstellen.'} note={note('homeassistant.token')}>
+              <input className="field" type="password" autoComplete="new-password" value={ha.token ?? ''} placeholder={ha.tokenSet ? '••••••••' : ''} onChange={(e) => setHa({ token: e.target.value })} />
+            </Field>
+            <Switch label="TLS-Zertifikat prüfen" checked={ha.verifySsl} onChange={(v) => setHa({ verifySsl: v })} />
+          </>}
         </div>
+        {io.mode !== 'homeassistant' && <>
         <div className="mt-2 grid sm:grid-cols-2 gap-x-8">
           <Switch label="HTTPS / WSS verwenden" checked={io.secure} onChange={(v) => setIo({ secure: v })} />
           <Switch label="Zertifikat prüfen (aus bei selbstsigniert)" checked={Boolean(io.verifySsl)} onChange={(v) => setIo({ verifySsl: v })} />
         </div>
         {status && !status.demo && status.source.connected && <WriteAccessCard />}
+        </>}
       </Card>
 
       <Card title="Synology Surveillance Station" right={<Toggle checked={ss.enabled} onChange={(v) => setSs({ enabled: v })} label="Surveillance Station" />}>
