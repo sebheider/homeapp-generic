@@ -93,6 +93,7 @@ Ohne Konfiguration startet die App im **Demo-Modus** mit einer simulierten Insta
 23. [Fehlersuche](#fehlersuche)
 24. [Herkunft und Entwicklung](#herkunft-und-entwicklung)
 25. [Home Assistant](#home-assistant)
+26. [Lizenz](#lizenz)
 
 ---
 
@@ -1137,3 +1138,7 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | App hinter Reverse Proxy lädt, aber „Server“ ist rot | WebSocket wird nicht durchgereicht – Header `Upgrade`/`Connection` aktivieren. |
 | Menü ist verschwunden | Es ist ausgeblendet: Knopf ☰ oben links (Handy: unten rechts) öffnet es; dauerhaft wieder anzeigen unter *Einstellungen → Anzeige & Bedienung*. |
 | Wandtablet zeigt nach einem Update noch die alte Version | Die Seite lädt spätestens nach 5 Minuten selbst neu; sofort hilft „Neu laden“ im Browser bzw. Kiosk-Browser. |
+
+## Lizenz
+
+HomeApp Generic steht unter der [MIT-Lizenz](./LICENSE).
