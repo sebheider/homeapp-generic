@@ -7,8 +7,9 @@ import { useEffect, useId, useState } from 'react';
 import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Moon, Sun } from 'lucide-react';
 import type { Condition } from '../lib/weather';
 import { weatherExtras } from '../lib/iconFx';
-import { moonAppearance } from '../lib/moon';
+import { moonAppearance, moonLitPath } from '../lib/moon';
 import { useStore } from '../lib/store';
+import moonImage from '../assets/moon-full.webp';
 
 /** Cloud outline in the 64×64 view box. */
 const CLOUD = 'M20 47h25a9.5 9.5 0 0 0 1.7-18.85A14 14 0 0 0 19.6 31.4 8 8 0 0 0 20 47z';
@@ -27,9 +28,31 @@ function Sun_({ cx, cy, r, scale = 1 }: { cx: number; cy: number; r: number; sca
   );
 }
 
-/** Approximate illuminated disc, oriented to the configured location's horizon. */
+/** Path of a four-pointed star with thin straight rays; `l` is the ray length, `w` the half-width at the base. */
+const sparkle = (x: number, y: number, l: number, w: number) =>
+  `M${x} ${y - l}L${x + w} ${y - w}L${x + l} ${y}L${x + w} ${y + w}L${x} ${y + l}L${x - w} ${y + w}L${x - l} ${y}L${x - w} ${y - w}Z`;
+
+/** Twinkling star with a soft glow, four long rays and four short diagonal ones. */
+function Star_({ x, y, size, delay = 0 }: { x: number; y: number; size: number; delay?: number }) {
+  return (
+    <g className="wx-sparkle" style={{ transformOrigin: `${x}px ${y}px`, animationDelay: `${delay}s` }}>
+      <circle cx={x} cy={y} r={size * 1.3} fill="url(#wx-star-glow)" />
+      <path d={sparkle(x, y, size * 0.65, size * 0.09)} fill="#e0f2fe" opacity=".7" transform={`rotate(45 ${x} ${y})`} />
+      <path d={sparkle(x, y, size * 1.3, size * 0.13)} fill="#f8fafc" />
+      <circle cx={x} cy={y} r={size * 0.22} fill="#fff" />
+    </g>
+  );
+}
+
+/**
+ * Moon from a full-moon image with the current phase, bright limb and lunar axis turned to the configured
+ * location's horizon. Image: NASA's Scientific Visualization Studio (SVS 5187, public domain), lunar north up.
+ */
 function Moon_({ cx, cy, r }: { cx: number; cy: number; r: number }) {
-  const clipId = `moon-lit-${useId().replaceAll(':', '')}`;
+  const id = useId().replaceAll(':', '');
+  const discId = `moon-disc-${id}`;
+  const litId = `moon-lit-${id}`;
+  const softId = `moon-soft-${id}`;
   const latitude = useStore((s) => s.config?.weather?.latitude);
   const longitude = useStore((s) => s.config?.weather?.longitude);
   const [now, setNow] = useState(Date.now);
@@ -38,35 +61,32 @@ function Moon_({ cx, cy, r }: { cx: number; cy: number; r: number }) {
     return () => clearInterval(timer);
   }, []);
   const starOffset = Math.min(r, 13);
-  const { illuminated: lit, brightLimbAngle, parallacticAngle } = moonAppearance(now, latitude, longitude);
-  const terminator = 1 - 2 * lit;
-  const rx = Math.max(0.01, Math.abs(terminator) * r);
-  const innerSweep = terminator >= 0 ? 1 : 0;
-  const litPath = `M${cx} ${cy - r}A${r} ${r} 0 0 1 ${cx} ${cy + r}A${rx} ${r} 0 0 ${innerSweep} ${cx} ${cy - r}Z`;
+  const { illuminated: lit, brightLimbAngle, axisAngle, parallacticAngle } = moonAppearance(now, latitude, longitude);
   const fullMoon = lit > 0.998;
-  const rotation = (parallacticAngle - brightLimbAngle) * 180 / Math.PI - 90;
+  const limbRotation = (parallacticAngle - brightLimbAngle) * 180 / Math.PI - 90;
+  // the terminator looks softest at half moon and narrows towards the limb for thin crescents
+  const softness = Math.max(0.01, r * 0.18 * Math.sqrt(lit * (1 - lit)));
+  const surface = (
+    <image href={moonImage} x={cx - r} y={cy - r} width={2 * r} height={2 * r}
+      transform={`rotate(${(parallacticAngle - axisAngle) * 180 / Math.PI} ${cx} ${cy})`} />
+  );
   return (
     <g className="wx-bob">
-      <circle cx={cx} cy={cy} r={r} fill="url(#wx-moon-dark)" stroke="#cbd5e1" strokeOpacity=".35" strokeWidth=".7" />
-      {lit > 0.002 && (
-        <>
-          <defs>
-            <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-              {fullMoon ? <circle cx={cx} cy={cy} r={r} /> : <path d={litPath} transform={`rotate(${rotation} ${cx} ${cy})`} />}
-            </clipPath>
-          </defs>
-          <g clipPath={`url(#${clipId})`}>
-            <circle cx={cx} cy={cy} r={r} fill="url(#wx-moon)" />
-            <g fill="#a47756" opacity=".22" transform={`rotate(${parallacticAngle * 180 / Math.PI} ${cx} ${cy})`}>
-              <circle cx={cx - r * 0.3} cy={cy - r * 0.27} r={r * 0.16} />
-              <circle cx={cx + r * 0.25} cy={cy + r * 0.28} r={r * 0.22} />
-              <circle cx={cx - r * 0.1} cy={cy + r * 0.62} r={r * 0.1} />
-            </g>
-          </g>
-        </>
-      )}
-      <circle cx={cx + starOffset * 1.25} cy={cy - starOffset * 0.9} r="1.4" fill="#e2e8f0" className="wx-twinkle" />
-      <circle cx={cx + starOffset * 0.55} cy={cy - starOffset * 1.35} r="1" fill="#e2e8f0" className="wx-twinkle" style={{ animationDelay: '-1.1s' }} />
+      <defs>
+        <clipPath id={discId}><circle cx={cx} cy={cy} r={r} /></clipPath>
+        <filter id={softId} x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation={softness} /></filter>
+        <mask id={litId} maskUnits="userSpaceOnUse" x={cx - r} y={cy - r} width={2 * r} height={2 * r}>
+          <path d={moonLitPath(cx, cy, r, lit)} transform={`rotate(${limbRotation} ${cx} ${cy})`} fill="#fff" filter={`url(#${softId})`} />
+        </mask>
+      </defs>
+      <g clipPath={`url(#${discId})`}>
+        <circle cx={cx} cy={cy} r={r} fill="#0b1220" />
+        <g opacity=".16">{surface}</g>
+        {fullMoon ? surface : lit > 0.002 && <g mask={`url(#${litId})`}>{surface}</g>}
+      </g>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#cbd5e1" strokeOpacity=".25" strokeWidth=".5" />
+      <Star_ x={cx + starOffset * 1.25} y={cy - starOffset * 0.9} size={starOffset * 0.26} />
+      <Star_ x={cx + starOffset * 0.55} y={cy - starOffset * 1.35} size={starOffset * 0.19} delay={-1.4} />
     </g>
   );
 }
@@ -108,13 +128,10 @@ export function WeatherIcon({ kind, isDay = true, size = 96, code, wind }: { kin
           <stop offset="0" stopColor="#fde68a" />
           <stop offset="1" stopColor="#f59e0b" />
         </radialGradient>
-        <linearGradient id="wx-moon" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff1d8" />
-          <stop offset="1" stopColor="#d9aa7a" />
-        </linearGradient>
-        <radialGradient id="wx-moon-dark" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#334155" />
-          <stop offset="1" stopColor="#0f172a" />
+        <radialGradient id="wx-star-glow">
+          <stop offset="0" stopColor="#f0f9ff" stopOpacity=".95" />
+          <stop offset=".25" stopColor="#bae6fd" stopOpacity=".5" />
+          <stop offset="1" stopColor="#7dd3fc" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="wx-cloud" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#f8fafc" />

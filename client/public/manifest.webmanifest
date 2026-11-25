@@ -2,7 +2,7 @@
   "id": "/",
   "name": "HomeApp",
   "short_name": "HomeApp",
-  "description": "Smart-Home-Steuerung für ioBroker und Synology Surveillance Station",
+  "description": "Smart-Home-Oberfläche für ioBroker mit optionaler Kamera-Integration",
   "lang": "de",
   "start_url": "/",
   "scope": "/",

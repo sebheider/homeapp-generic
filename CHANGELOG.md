@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.6.0] – 2026-11-25
+
+Wetter: Der Mond im Wettersymbol sieht aus wie gerade draußen am Himmel.
+
+### Hinzugefügt
+- **Echter Mond im nächtlichen Wettersymbol** (klar, teils bewölkt, Schauer): ein Mondbild der NASA (Scientific Visualization Studio, gemeinfrei) mit der aktuellen **Mondphase**. Beleuchteter Teil, **Schattenseite** (weicher Übergang, schwacher Erdschein) und **Neigung** werden aus Uhrzeit und Standort (*Einstellungen → Wetter*) berechnet – so, wie der Mond dort gerade steht, auf der Südhalbkugel also „kopfüber“. Die Berechnung stimmt auf etwa 1° bzw. 0,5 Prozentpunkte mit JPL Horizons überein und wird jede Minute aktualisiert; ohne Standort zeigt Himmelsnord nach oben.
+
+### Geändert
+- Der Mond im Wettersymbol ist halb so groß, die beiden Sterne daneben funkeln jetzt als Sterne mit Strahlen und Glow.
+
 ## [2.5.0] – 2026-11-15
 
 Pushover: regelmäßige Statusupdates vom 3D-Drucker.

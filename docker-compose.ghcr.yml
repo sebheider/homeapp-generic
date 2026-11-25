@@ -9,7 +9,7 @@
 services:
   homeapp:
     # Standard: das Image dieses Repositories. Bei einem anderen Konto/Repository in .env HOMEAPP_IMAGE setzen.
-    image: ${HOMEAPP_IMAGE:-ghcr.io/sebheider/homeapp:latest}
+    image: ${HOMEAPP_IMAGE:-ghcr.io/sebheider/homeapp-generic:latest}
     container_name: homeapp
     restart: unless-stopped
     ports:

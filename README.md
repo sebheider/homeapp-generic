@@ -5,6 +5,24 @@ Läuft als einzelner Container (React-Frontend + Node.js-Server) auf Systemen mi
 einschließlich Synology. Ohne ioBroker ist der Demo-Modus nutzbar; eine andere Smart-Home-Plattform
 als Live-Datenquelle wird derzeit nicht unterstützt.
 
+## Herkunft und Entwicklung
+
+HomeApp Generic basiert auf [HomeApp von Sebastian Heider](https://github.com/sebheider/homeapp).
+Das ursprüngliche Projekt entstand als Smart-Home-Oberfläche für ioBroker und die Synology
+Surveillance Station, zunächst mit einem auf Synology zugeschnittenen Deployment. Diese eigenständige
+Codeübernahme macht den Betrieb auf anderen Systemen mit Linux-Containern zum Standardweg; Synology
+bleibt als optionale Kamera-Integration und als mögliches Hostsystem erhalten. Der importierte Stand
+enthält nicht die Git-Historie des Ursprungsprojekts; dessen Verlauf ist im ursprünglichen Repository
+nachvollziehbar.
+
+Die Entwicklung erfolgte schrittweise durch Sebastian Heider mit Unterstützung von GitHub Copilot;
+Beiträge und KI-Unterstützung sind in der Historie des Ursprungsprojekts anhand von Commits und
+Co-Author-Trailern dokumentiert. Die Anwendung kombiniert ein React-/TypeScript-Frontend mit einem
+Node.js-/Express-Backend, REST und WebSockets. Tests für Backend, Frontend und den optionalen
+Kiosk-Agenten sowie automatisierte Container-Builds unterstützen die Weiterentwicklung. Der Quellcode
+ist nicht automatisch für weitere Plattformen austauschbar: ioBroker bleibt derzeit die einzige
+unterstützte Live-Datenquelle für Smart-Home-Datenpunkte.
+
 - 🛰️ **Übersicht als Kommandozentrale** – animierte Live-Anzeigen auf einen Blick: Uhr, „Home Core“ mit dem Zustand des Hauses, Wetter mit UV-Index und UV-Prognose, Rundinstrumente für Batterie (Flüssigkeitsanzeige), Licht und Wärmepumpe, Energiefluss mit 24-h-Kurve (während der Mähroboter mäht, stattdessen seine Live-Karte), Kameras mit Aktivitäts-Zeitleiste und alle Räume als leuchtende Kacheln
 - 🧊 **Design „Nexus“ (wählbar)** – holografischer digitaler Zwilling des Hauses mit schwebenden Etagen, Live-Werten an den Räumen, Hinweisen, Energie-Wellenform und Cockpit-Panels
 - 🧩 **Eigene Startseite (wählbar)** – frei gestaltbar aus Widgets (Uhr, Home Core, Wetter, einzelne Wetter- und Energieanzeigen wie UV-Index oder Regenradar, Rundinstrumente, Energiefluss, Sicherheit, Kamera, Räume, Szenen, Licht, Geräte, 3D-Drucker, Spotify, Müllabfuhr, Lüften, Text), die du direkt auf der Übersicht in einem Raster platzierst, verschiebst und in der Größe änderst; der Inhalt wächst mit der Widgetgröße
@@ -12,7 +30,7 @@ als Live-Datenquelle wird derzeit nicht unterstützt.
 - 🔥 **Heizung & Klima** – Thermostate mit Soll-Wert-Drehregler, Klimaanlagen (je Betriebsart ein Sollwert), Wärmepumpe mit Warmwasser, Verdichter (Schalter oder Drehzahl) und Stromverbrauch (in W oder kW)
 - 🪟 **Rollläden** – animierte Position, Auf / Stopp / Zu
 - ☀️ **Energie** – animierter Energiefluss (PV, Netz, Batterie, Haus, Wallbox), Kennzahlen und 6/24/48-h-Verlaufsdiagramme
-- 🌤️ **Wetter** – eigene Seite mit aktuellem Wetter (lokale Wetterstation + Internet), Stundenverlauf, Sonnenauf-/-untergang, UV-Index mit Stundenprognose, 3-Tage-Vorschau und animiertem Regenradar; Standort frei einstellbar. Das nächtliche Wettersymbol zeigt eine näherungsweise berechnete Mondphase und, bei eingestelltem Standort, deren Ausrichtung zum Horizont. Ohne Standort wird die Ausrichtung zum Himmelsnordpol verwendet; die Darstellung ist kein Mondfoto.
+- 🌤️ **Wetter** – eigene Seite mit aktuellem Wetter (lokale Wetterstation + Internet), Stundenverlauf, Sonnenauf-/-untergang, UV-Index mit Stundenprognose, 3-Tage-Vorschau und animiertem Regenradar; Standort frei einstellbar. Nachts zeigt das Wettersymbol den Mond mit berechneter Phase, Schattenseite und standortabhängiger Neigung.
 - 📹 **Kameras** – Live-Bilder und MJPEG-Livestream aus der Surveillance Station, **automatische Einblendung bei Bewegung** (mittig und groß oder klein in der Ecke, einstellbar), bei Bedarf zeitweise pausierbar mit automatischer Reaktivierung und dauerhafter Statusmeldung
 - 🖨️ **3D-Drucker (OctoPrint oder Bambu Lab)** – eigene Seite mit Webcam (auch als Live-Stream), Fortschritt, Restzeit, Fertigstellungszeit und Temperaturkurven; während des Drucks auf allen Übersichts-Designs sichtbar und regelmäßig als Webcam-Einblendung (Intervall einstellbar), dazu eine Meldung, wenn der Druck fertig ist
 - 🎵 **Spotify Connect** – eigene Spotify-Seite mit Suche (Titel, Alben, Künstler, Playlists), eigenen Playlists, Warteschlange, zuletzt gehörten Titeln und Gerätewahl (z. B. der Verstärker); solange Musik läuft, ein Mini-Player auf allen Übersichts-Designs mit Lautstärke, Weiter/Zurück, Pause/Fortsetzen, Zufall und Wiederholen
@@ -57,6 +75,7 @@ Ohne Konfiguration startet die App im **Demo-Modus** mit einer simulierten Insta
 20. [Konfigurationsformat](#konfigurationsformat-configjson)
 21. [API](#api)
 22. [Fehlersuche](#fehlersuche)
+23. [Herkunft und Entwicklung](#herkunft-und-entwicklung)
 
 ---
 
@@ -67,8 +86,8 @@ Node.js und npm müssen nicht auf dem Host installiert sein. Docker muss Linux-C
 können; unter Windows und macOS ist dafür üblicherweise Docker Desktop erforderlich.
 
 ```bash
-git clone https://github.com/sebheider/homeapp.git
-cd homeapp
+git clone https://github.com/sebheider/homeapp-generic.git
+cd homeapp-generic
 docker compose -f docker-compose.generic.yml up -d --build
 ```
 
@@ -90,7 +109,10 @@ ausführen. Das Datenverzeichnis bleibt erhalten. Anhalten mit
 `docker compose -f docker-compose.generic.yml down`. Der generische Startweg verwendet das
 automatisch verwaltete Compose-Netz ohne feste Container-IP; für Webhooks eine vom sendenden
 Gerät erreichbare Host-Adresse verwenden. Bestehende Synology-Projekte und ihre feste IP bleiben
-unverändert, solange sie ihre bisherige Compose-Datei verwenden.
+unverändert, solange sie ihre bisherige Compose-Datei verwenden. Die GHCR-Compose-Datei dieses
+Repositories verweist auf das neue Image `ghcr.io/sebheider/homeapp-generic:latest`; sie aktualisiert
+damit nicht mehr das ursprüngliche Image. Vor einer Migration `data` sichern und ein vorhandenes
+Container-Projekt nicht parallel mit demselben Datenverzeichnis starten.
 
 Ein Betrieb ohne Docker ist ebenfalls möglich: Node.js 20.19+ (20.x) oder 22.12+ installieren, im Verzeichnis
 `server` `npm ci` und im Verzeichnis `client` `npm ci` sowie `npm run build` ausführen.
@@ -102,7 +124,11 @@ zum Startverzeichnis (`./data`). Für lokale Entwicklung siehe [Entwicklung](#en
 
 ## Schnellstart auf der Synology
 
-Voraussetzung: **Container Manager** (DSM 7.2+) bzw. Docker-Paket.
+Dieser Abschnitt beschreibt die weiterhin unterstützte, Synology-spezifische Alternative. Für neue
+Installationen auf beliebigen Hosts einschließlich Synology ist der
+[plattformunabhängige Schnellstart](#plattformunabhängiger-schnellstart) der Standard.
+Die folgenden Legacy-Compose-Dateien verwenden weiterhin ein festes Netz. Voraussetzung:
+**Container Manager** (DSM 7.2+) bzw. Docker-Paket.
 
 ### Variante A – Projekt im Container Manager (Dateien selbst kopieren)
 
@@ -142,21 +168,25 @@ Konfiguration und Verlaufsdaten liegen in `./data` (Volume `/data` im Container)
 
 > **Alternative ohne vorgebaute Dateien:** `Dockerfile.full` baut alles im Container (`docker build -f Dockerfile.full -t homeapp:latest .`). Das setzt voraus, dass `npm` im Docker der Synology zuverlässig läuft – auf älteren Docker-Versionen bricht `npm ci` teils mit „Exit handler never called!“ ab. Dafür ist das Standard-`Dockerfile` gedacht.
 
-### Variante C – Automatische Updates aus GitHub (empfohlen)
+### Variante C – Automatische Updates aus GitHub (Synology)
 
 Der Container Manager kann ein Git-Repository nicht selbst überwachen. Stattdessen übernimmt GitHub das Bauen und die Synology holt das fertige Image regelmäßig ab. Ein `git push` auf `main` reicht dann, kurz danach läuft die neue Version, **ohne Kopieren, ohne npm und ohne Build auf der Synology**.
 
 ```
-git push → GitHub Actions baut das Image (amd64 + arm64) → ghcr.io/sebheider/homeapp:latest
+git push → GitHub Actions baut das Image (amd64 + arm64) → ghcr.io/sebheider/homeapp-generic:latest
          → Aufgabenplaner der Synology prüft alle 5 Minuten → neues Image → Container wird ersetzt
 ```
 
-Der Workflow `.github/workflows/docker.yml` startet bei jedem Push auf `main` (reine Änderungen an `*.md` ausgenommen), führt die Server-Tests aus und veröffentlicht nur bei bestandenen Tests. Der Stand eines Builds steht im GitHub-Reiter *Actions*. Jedes Image bekommt zusätzlich einen Tag `sha-<Commit>`, damit du bei Problemen zu einer älteren Version zurückkehren kannst.
+Der Workflow `.github/workflows/docker.yml` startet bei Pushes auf `main` und veröffentlicht das
+Image erst nach bestandenen Tests. Der Stand eines Builds steht im GitHub-Reiter *Actions*. Jedes
+Image bekommt zusätzlich einen Tag `sha-<Commit>`, damit du bei Problemen zu einer älteren Version
+zurückkehren kannst. Das Image muss zunächst erfolgreich im neuen Repository gebaut und veröffentlicht
+werden; bis dahin den [Build aus Quellcode](#plattformunabhängiger-schnellstart) verwenden.
 
 **Einmalige Einrichtung**
 
 1. **Erstes Image bauen:** Nach dem Push läuft der Workflow (ca. 5–10 Minuten). Erst danach existiert das Image unter *GitHub → dein Profil → Packages*.
-2. **Zugriff auf das private Image – lokal im Projektordner, ohne SSH:** Das Image ist privat, weil das Repository privat ist. Die Synology braucht dafür ein Zugriffstoken:
+2. **Zugriff auf ein privates Image – lokal im Projektordner, ohne SSH:** Falls das Package privat ist, braucht die Synology ein Zugriffstoken:
    - *GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token*, nur Berechtigung **`read:packages`**, möglichst mit Ablaufdatum.
    - In `/volume1/docker/HomeApp/.env` (Vorlage: `.env.example`) eintragen:
      ```
@@ -176,7 +206,7 @@ Der Workflow `.github/workflows/docker.yml` startet bei jedem Push auf `main` (r
    cd /volume1/docker/HomeApp || exit 1
    envv() { grep -E "^$1=" .env 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\r'; }
    note() { [ "$(tail -n 1 update.log 2>/dev/null | cut -d' ' -f3-)" = "$1" ] || echo "$(date '+%F %T') $1" >> update.log; }
-   IMAGE=$(envv HOMEAPP_IMAGE); IMAGE=${IMAGE:-ghcr.io/sebheider/homeapp:latest}
+   IMAGE=$(envv HOMEAPP_IMAGE); IMAGE=${IMAGE:-ghcr.io/sebheider/homeapp-generic:latest}
    GHCR_USER=$(envv GHCR_USER); GHCR_TOKEN=$(envv GHCR_TOKEN)
    if docker compose version >/dev/null 2>&1; then DC="docker compose"; else DC="docker-compose"; fi
 
@@ -212,7 +242,7 @@ Der Workflow `.github/workflows/docker.yml` startet bei jedem Push auf `main` (r
 
 > **Hinweis:** Der Container startet beim Update kurz neu (wenige Sekunden). Läuft gerade ein Build auf GitHub, bleibt die alte Version aktiv, bis das neue Image fertig ist. Schlägt der Build fehl, ändert sich auf der Synology nichts.
 
-### Feste IP-Adresse des Containers
+### Feste IP-Adresse des Containers (nur Synology-Legacy-Compose)
 
 Die `docker-compose.yml` legt ein eigenes Netzwerk `homeapp_net` (`172.40.0.0/24`, Gateway `172.40.0.1`) an und gibt dem Container die feste Adresse **`172.40.0.10`**.
 
@@ -328,8 +358,8 @@ Drei Quellen melden Erkennungen:
 **Webhook-URLs**
 
 ```
-https://<IP-der-Synology>:8095/api/webhook/motion/<Kamera>?token=<Token>   normale Bewegung
-https://<IP-der-Synology>:8095/api/webhook/people/<Kamera>?token=<Token>   Person (erweiterte Erkennung)
+https://<HomeApp-Host>:8095/api/webhook/motion/<Kamera>?token=<Token>   normale Bewegung
+https://<HomeApp-Host>:8095/api/webhook/people/<Kamera>?token=<Token>   Person (erweiterte Erkennung)
 ```
 
 `<Kamera>` ist die Kamera-ID (z. B. `21`) oder ihr Name (z. B. `Terrasse`). Alternativ gibt es `…/motion/<Kamera>?token=…&type=people`.
@@ -420,6 +450,8 @@ Was angezeigt wird:
 | Regen | Niederschlag der nächsten Stunden (15-min-Raster), animiertes Radar der letzten ~100 Minuten, Zoom | Internet |
 
 Bei gemessenen Werten gilt: **die lokale Station hat Vorrang**, fehlende Werte kommen aus dem Internet. Ein Punkt neben jedem Wert zeigt die Herkunft (grün = Station, blau = Internet).
+
+**Mond im Wettersymbol:** Nachts (klar, teils bewölkt, Schauer) erscheint ein echtes Mondbild mit der aktuellen Phase. Beleuchteter Teil, Schattenseite (schwach als Erdschein sichtbar, mit weichem Übergang) und Neigung werden im Browser aus Uhrzeit und Standort berechnet – so, wie der Mond dort gerade am Himmel steht, auf der Südhalbkugel also entsprechend „kopfüber“. Die Berechnung stimmt auf etwa 1° (Winkel) bzw. 0,5 Prozentpunkte (Beleuchtung) mit JPL Horizons überein und wird jede Minute aktualisiert; ohne Standort zeigt Himmelsnord nach oben. Die Libration (das leichte Taumeln der Mondoberfläche) wird nicht nachgebildet. Bildnachweis: [NASA's Scientific Visualization Studio, „Moon Phase and Libration, 2024“](https://svs.gsfc.nasa.gov/5187) (Ernie Wright, Noah Petro, David Ladd), gemeinfrei; für die App auf Mond-Nord ausgerichtet und verkleinert (`client/src/assets/moon-full.webp`).
 
 **Datenquellen und Datenschutz:** Prognose, Sonne, UV und Ortssuche liefert [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Schlüssel, für nichtkommerzielle Nutzung). Sie werden vom **Server** abgerufen und 10 Minuten zwischengespeichert; der Container braucht also Internetzugriff. Fällt das Internet aus, bleiben die letzten Daten sichtbar (mit Hinweis). Das Radar (RainViewer) und die Kartenkacheln (Esri) lädt der **Browser** direkt; dabei sehen diese Anbieter, welcher Kartenausschnitt angezeigt wird. RainViewer liefert Radarbilder nur bis Zoomstufe 7. Im Demo-Modus ohne Standort erscheinen simulierte Wetterdaten.
 
@@ -752,13 +784,13 @@ Eine Änderung der `.env` wirkt erst, wenn das Projekt neu erstellt wird (ein Ne
 
 ## HTTPS
 
-HTTPS ist **standardmäßig aktiv**, ohne Änderung des Ports: `https://<IP-der-Synology>:8095` (Container: `PORT=8080`, Mapping weiterhin `8095:8080`). WebSockets wechseln automatisch auf `wss://`.
+HTTPS ist **standardmäßig aktiv**, ohne Änderung des Ports: `https://<HomeApp-Host>:8095` (Container: `PORT=8080`, standardmäßiges Mapping `8095:8080`). WebSockets wechseln automatisch auf `wss://`.
 
-Wer versehentlich `http://<IP-der-Synology>:8095` aufruft, wird automatisch auf `https://` mit derselben Adresse, demselben Port und Pfad umgeleitet (HomeApp erkennt am ersten Byte der Verbindung, ob verschlüsselt wird). Die Weiterleitung ist vorübergehend (307) und wird nicht zwischengespeichert, damit nach einem späteren Umschalten auf `HTTPS=false` keine alte Weiterleitung im Browser hängen bleibt.
+Wer versehentlich `http://<HomeApp-Host>:8095` aufruft, wird automatisch auf `https://` mit derselben Adresse, demselben Port und Pfad umgeleitet (HomeApp erkennt am ersten Byte der Verbindung, ob verschlüsselt wird). Die Weiterleitung ist vorübergehend (307) und wird nicht zwischengespeichert, damit nach einem späteren Umschalten auf `HTTPS=false` keine alte Weiterleitung im Browser hängen bleibt.
 
-Beim ersten Start erzeugt OpenSSL ein selbstsigniertes Zertifikat (10 Jahre gültig) unter `data/certs/cert.pem` und `data/certs/key.pem` (im Container `/data/certs`). Die Dateien bleiben im Daten-Volume bei Updates erhalten. Die **Browserwarnung einmalig bestätigen**; beim Zugriff über die Synology-IP passt außerdem der Zertifikatsname nicht zur Adresse.
+Beim ersten Start erzeugt OpenSSL ein selbstsigniertes Zertifikat (10 Jahre gültig) unter `data/certs/cert.pem` und `data/certs/key.pem` (im Container `/data/certs`). Die Dateien bleiben im Daten-Volume bei Updates erhalten. Die **Browserwarnung einmalig bestätigen**; beim Zugriff über eine andere Host-IP passt außerdem der Zertifikatsname nicht zur Adresse.
 
-Für ein **eigenes Zertifikat**, z. B. das Let's-Encrypt-Zertifikat der Synology, Zertifikat (ggf. inklusive Zwischenzertifikaten) und privaten Schlüssel als `data/certs/cert.pem` / `data/certs/key.pem` ablegen. Alternativ `TLS_CERT` und `TLS_KEY` auf andere, im Container erreichbare PEM-Dateien setzen (bei Dateien außerhalb von `data` einen zusätzlichen Volume-Mount einrichten). Beide Dateien müssen vorhanden sein; fehlt eine, wird ein neues selbstsigniertes Paar erzeugt. Den privaten Schlüssel schützen und den Container nach Austausch oder Erneuerung des Zertifikats neu starten. Für ein vertrauenswürdiges Zertifikat muss die aufgerufene Adresse zum Zertifikat passen (bei Let's Encrypt üblicherweise der Domainname statt der IP).
+Für ein **eigenes Zertifikat**, z. B. ein Let's-Encrypt-Zertifikat, Zertifikat (ggf. inklusive Zwischenzertifikaten) und privaten Schlüssel als `data/certs/cert.pem` / `data/certs/key.pem` ablegen. Alternativ `TLS_CERT` und `TLS_KEY` auf andere, im Container erreichbare PEM-Dateien setzen (bei Dateien außerhalb von `data` einen zusätzlichen Volume-Mount einrichten). Beide Dateien müssen vorhanden sein; fehlt eine, wird ein neues selbstsigniertes Paar erzeugt. Den privaten Schlüssel schützen und den Container nach Austausch oder Erneuerung des Zertifikats neu starten. Für ein vertrauenswürdiges Zertifikat muss die aufgerufene Adresse zum Zertifikat passen (bei Let's Encrypt üblicherweise der Domainname statt der IP).
 
 Mit `HTTPS=false` in `.env` und neu erstelltem Compose-Projekt läuft HomeApp wieder über **reines HTTP auf demselben Port**. Das gilt auch für lokale Entwicklung: `HTTPS=false PORT=8099 npm start`; der Vite-Proxy zeigt weiterhin auf `http://localhost:8099`.
 
@@ -806,7 +838,7 @@ IOBROKER_USER=homeapp IOBROKER_PASSWORD=*** HTTPS=false DATA_DIR=./data-live POR
 
 ```bash
 git tag -a v1.5.0 -m "HomeApp 1.5.0"
-git push origin main v1.5.0
+git push <remote> main v1.5.0
 ```
 
 Der Push auf `main` baut das Docker-Image, der Tag erzeugt automatisch ein GitHub-Release mit dem passenden Changelog-Abschnitt als Release Notes (`.github/workflows/release.yml`).
@@ -882,6 +914,7 @@ HomeApp/
       │                    Anzeige-Einstellungen, PWA
       ├─ components/       Gerätekarten, Energiefluss, Diagramme, Kameras, 3D-Drucker, Spotify-Player, Mähroboter-Karte, HUD-Anzeigen der Übersicht,
       │                    digitaler Zwilling (HomeTwin), Kiosk-Verhalten (DisplayEffects), UI
+      ├─ assets/           Gebündelte Bilder (Mondbild des Wettersymbols)
       └─ views/            Übersicht (Standard, Nexus, Eigene), Wetter, Räume, Licht, Klima, Energie, Kameras,
                            Spotify, 3D-Drucker, Mähroboter, Radar, Einstellungen
 ```
@@ -987,10 +1020,10 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 |---------|------------------|
 | „Keine Berechtigung …“ | Der ioBroker-Benutzer ist keiner Gruppe zugeordnet (siehe [Berechtigungen](#verbindung-zu-iobroker)). |
 | „Keine Schreibberechtigung für diesen Datenpunkt“ | Gruppenrechte sind nicht genug: die Datenpunkte haben eigene Rechte. *Einstellungen → Verbindungen & Zugriff → Schreibrechte prüfen* und das erzeugte Skript ausführen ([Anleitung](#keine-schreibberechtigung-für-diesen-datenpunkt-trotz-passender-gruppenrechte)). |
-| „ioBroker nicht erreichbar“ | Host/Port prüfen, Protokoll (`ws` vs. `socket.io`) und HTTPS passend zum Adapter wählen. Von der Synology aus erreichbar? |
+| „ioBroker nicht erreichbar“ | Host/Port prüfen, Protokoll (`ws` vs. `socket.io`) und HTTPS passend zum Adapter wählen. Ist ioBroker vom HomeApp-Container bzw. Server aus erreichbar? |
 | „Anmeldung fehlgeschlagen“ | Benutzer/Passwort prüfen; Sonderzeichen im Passwort sind erlaubt. |
 | Geräte zeigen „–“ | Datenpunkt-ID falsch oder keine Leseberechtigung. |
-| Build bricht mit „npm error Exit handler never called!“ ab | Das Standard-`Dockerfile` nutzt kein npm mehr. Stelle sicher, dass `server/node_modules/` und `client/dist/` mit hochgeladen wurden (sonst scheitert `COPY`). |
+| Build bricht mit „npm error Exit handler never called!“ ab | Die generische Compose-Datei verwendet `Dockerfile.full` und führt `npm ci` im Build aus. Bei älteren Synology-Docker-Versionen ist das Legacy-`Dockerfile` eine Alternative: Dafür `server/node_modules/` und `client/dist/` vorab erstellen und mit hochladen. |
 | „Kameras leer“ | Surveillance-Station-Verbindung unter *Einstellungen* prüfen; das Konto braucht das Recht „Live-Ansicht“ (bei 2FA siehe unten). |
 | „DSM verlangt … 2-Faktor-Anmeldung … noch nicht eingerichtet“ (Code 406) | Für das Konto ist 2FA vorgeschrieben, aber noch nicht eingerichtet. In DSM unter *Persönlich → Konto* die 2-Faktor-Authentifizierung einrichten und danach den ersten Code in der App eintragen ([Anleitung](#konto-mit-2-faktor-anmeldung-2fa)) – oder die Pflicht in *Systemsteuerung → Sicherheit → Konto* aufheben. |
 | „Das Konto benötigt einen 2-Faktor-Code“ (403) / „Code falsch oder abgelaufen“ (404) | Aktuellen Code in den Einstellungen eintragen und sofort speichern (Codes gelten ~30 s). Die App versucht fehlerhafte Anmeldungen nicht erneut, um DSMs Auto-Block nicht auszulösen – nach dem Speichern wird neu verbunden. |
@@ -998,7 +1031,7 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | Keine Bewegungs-Einblendung | Zeichnen die Kameras durchgehend auf, liefert die Station keine Bewegungsereignisse: Webhooks einrichten (siehe oben). Außerdem Sperrzeit pro Kamera und die Schalter unter *Einstellungen → Kameras & Einblendungen* prüfen. |
 | Wetter zeigt „Standort festlegen“ oder „Wetterdaten nicht erreichbar“ | Standort unter *Einstellungen → Wetter* setzen. Meldung „nicht erreichbar“: der Container braucht Internetzugriff auf `api.open-meteo.com` (DNS / Firewall prüfen). Radar leer: der **Browser** braucht Zugriff auf `tilecache.rainviewer.com` und `server.arcgisonline.com`. |
 | 3D-Drucker: „API-Key ungültig oder ohne Berechtigung“ | Key in OctoPrint unter *Einstellungen → Application Keys* prüfen bzw. neu erzeugen und in HomeApp eintragen; der Benutzer braucht das Recht „Status“. |
-| 3D-Drucker: „nicht erreichbar“ / „Verbindung abgelehnt“ | Host und Port prüfen (OctoPi: 80, ohne Proxy: 5000) und ob der Pi von der Synology aus erreichbar ist. „HTTPS-Einstellung passt nicht zum Port“: Schalter *HTTPS verwenden* an den Port anpassen. |
+| 3D-Drucker: „nicht erreichbar“ / „Verbindung abgelehnt“ | Host und Port prüfen (OctoPi: 80, ohne Proxy: 5000) und ob der Drucker vom HomeApp-Container bzw. Server aus erreichbar ist. „HTTPS-Einstellung passt nicht zum Port“: Schalter *HTTPS verwenden* an den Port anpassen. |
 | Bambu Lab: „Zugangscode abgelehnt“ | Zugangscode am Drucker (Netzwerk-Einstellungen) neu ablesen – er ändert sich beim erneuten Einschalten des LAN-Modus – und den **Entwicklermodus** einschalten. |
 | Bambu Lab: „Verbunden, aber keine Daten vom Drucker“ | Seriennummer prüfen (Einstellungen → Gerät am Drucker). |
 | Bambu Lab: kein Webcam-Bild | X1/H2/P2S: am Drucker „LAN-Liveview“ einschalten; „ffmpeg ist nicht installiert“ tritt nur ohne Docker-Image auf. Ist die Kamera schon von zu vielen Programmen geöffnet (Bambu Studio, Home Assistant …), go2rtc als gemeinsame Quelle nutzen und dessen MJPEG-Adresse eintragen. |
@@ -1008,7 +1041,7 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | Spotify: „Die Steuerung erfordert Spotify Premium“ | Steuern geht nur mit Premium; Anzeigen und Suchen funktionieren trotzdem. |
 | Spotify: „Kein aktives Spotify-Gerät“ / Verstärker fehlt in der Liste | Den Verstärker einschalten und einmal in der Spotify-App als Gerät wählen – Spotify listet Connect-Geräte erst, wenn sie mit dem Konto verbunden sind. Der Name unter *Gerät* muss dem Namen in Spotify entsprechen. |
 | Spotify: „Anmeldung abgelaufen“ | Die Freigabe wurde in Spotify widerrufen oder die Client-ID geändert: *Einstellungen → Spotify → Neu verbinden*. |
-| Spotify: „Spotify nicht erreichbar: …“ nach der Rückkehr von Spotify (früher nur „fetch failed“) | Die Freigabe im Browser hat geklappt, aber der **Server** erreicht `accounts.spotify.com` / `api.spotify.com` nicht – der Container braucht Internetzugang. Die Meldung nennt den Grund, Details stehen im Container-Log (`[Spotify] …`). Test auf der Synology: `sudo docker exec homeapp node -e "fetch('https://accounts.spotify.com').then(r => console.log('ok', r.status), e => console.log(e.cause ?? e))"`. „lässt sich nicht auflösen“: DNS des Containers – z. B. in der Compose-Datei unter `homeapp:` `dns: [<IP-des-Routers>, 1.1.1.1]` ergänzen. „keine Verbindung“ / „Zeitüberschreitung“: bei aktiver DSM-Firewall Verkehr aus `172.40.0.0/24` erlauben, Router/Firewall prüfen. „Zertifikat nicht akzeptiert“: Uhrzeit der Synology (NTP) prüfen oder ob ein Proxy / Virenscanner HTTPS aufbricht. |
+| Spotify: „Spotify nicht erreichbar: …“ nach der Rückkehr von Spotify (früher nur „fetch failed“) | Der **Server** erreicht `accounts.spotify.com` / `api.spotify.com` nicht. Details stehen im Container-Log (`[Spotify] …`). Test beim generischen Compose-Projekt: `docker compose -f docker-compose.generic.yml exec homeapp node -e "fetch('https://accounts.spotify.com').then(r => console.log('ok', r.status), e => console.log(e.cause ?? e))"`. DNS, Router und Firewall sowie bei Zertifikatsfehlern die Systemzeit und HTTPS-Inspektion prüfen. Das feste Netz `172.40.0.0/24` betrifft nur die Synology-Legacy-Compose-Dateien. |
 | App hinter Reverse Proxy lädt, aber „Server“ ist rot | WebSocket wird nicht durchgereicht – Header `Upgrade`/`Connection` aktivieren. |
 | Menü ist verschwunden | Es ist ausgeblendet: Knopf ☰ oben links (Handy: unten rechts) öffnet es; dauerhaft wieder anzeigen unter *Einstellungen → Anzeige & Bedienung*. |
 | Wandtablet zeigt nach einem Update noch die alte Version | Die Seite lädt spätestens nach 5 Minuten selbst neu; sofort hilft „Neu laden“ im Browser bzw. Kiosk-Browser. |

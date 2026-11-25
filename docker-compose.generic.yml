@@ -1,5 +1,5 @@
-# Platform-independent build from a clean checkout; existing Synology setups can
-# continue to use docker-compose.yml or docker-compose.ghcr.yml unchanged.
+# Platform-independent build from a clean checkout. Existing Synology setups
+# can keep their original Compose files; see the README before migrating.
 services:
   homeapp:
     build:

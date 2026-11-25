@@ -111,7 +111,7 @@ test('kein neues Image: Anmeldung nur temporär, Container bleibt unberührt, ke
   assert.ok(r.calls.includes('login-user=homeapp cfg-ok=yes'), 'Anmeldung mit Benutzer aus .env, in vorhandenem temporären Ordner');
   assert.equal(r.stdin, 'ghp_test123', 'Token kommt über stdin, nicht als Argument');
   assert.ok(!r.calls.some((c) => c.includes('ghp_test123')), 'Token darf in keinem Aufruf als Argument stehen');
-  assert.ok(r.calls.includes('pull -q ghcr.io/sebheider/homeapp:latest'));
+  assert.ok(r.calls.includes('pull -q ghcr.io/sebheider/homeapp-generic:latest'));
   assert.ok(!r.calls.some((c) => c.startsWith('compose -p')), 'kein Neustart ohne neues Image');
   assert.equal(r.log, '');
 });
@@ -139,7 +139,7 @@ test('ohne Token (öffentliches Package): keine Anmeldung', { skip }, () => {
 test('ohne .env: Standard-Image, keine Anmeldung', { skip }, () => {
   const r = run({ env: null });
   assert.ok(!r.calls.some((c) => c.startsWith('login')));
-  assert.ok(r.calls.includes('pull -q ghcr.io/sebheider/homeapp:latest'));
+  assert.ok(r.calls.includes('pull -q ghcr.io/sebheider/homeapp-generic:latest'));
 });
 
 test('.env mit Windows-Zeilenenden (CRLF)', { skip }, () => {
