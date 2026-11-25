@@ -1,0 +1,18 @@
+{
+  "url": "https://192.168.1.10:8443/api/kiosk/report?token=HIER_TOKEN_AUS_DEN_EINSTELLUNGEN",
+  "id": "flur",
+  "name": "Wanddisplay Flur",
+  "insecure_tls": true,
+  "ld2410": { "enabled": true, "port": "/dev/serial0", "baudrate": 256000, "out_pin": null, "gate_cm": 75 },
+  "bh1750": { "enabled": true, "bus": 1, "address": 35 },
+  "scd41": { "enabled": true, "bus": 1 },
+  "display": {
+    "method": "auto",
+    "backlight": "",
+    "output": "",
+    "on_command": "",
+    "off_command": "",
+    "brightness_command": ""
+  },
+  "touch_wake": true
+}

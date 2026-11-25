@@ -1,0 +1,19 @@
+[Unit]
+Description=HomeApp Kiosk-Agent (Präsenz, Licht, CO2, Display)
+# Nicht nach graphical.target ordnen: zusammen mit WantedBy=multi-user.target ergäbe das einen
+# Ordnungs-Zyklus, und systemd würde den Start beim Booten verwerfen. Der Agent findet die
+# Wayland-/X11-Sitzung selbst, sobald sie läuft.
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# install.sh trägt den Benutzer der Desktop-Sitzung ein (für wlr-randr/xset und /dev/input)
+User=pi
+ExecStart=/usr/bin/python3 /opt/homeapp-kiosk/homeapp_kiosk.py --config /etc/homeapp-kiosk.json
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

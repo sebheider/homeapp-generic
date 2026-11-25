@@ -1,0 +1,55 @@
+# HomeApp – Variante MIT automatischen Updates aus GitHub (fertiges Image statt lokalem Build)
+#
+# Das Image baut GitHub bei jedem Push auf main (siehe .github/workflows/docker.yml). Diese Datei
+# braucht keinen Quellcode auf der Synology: nur sie selbst (als "docker-compose.yml"), die optionale
+# ".env" und der Ordner "data". Einrichtung und Update-Aufgabe: README → "Automatische Updates aus GitHub".
+#
+# Ablage auf der Synology: /volume1/docker/HomeApp  (Datei dort als docker-compose.yml speichern)
+# Danach: https://<IP-der-Synology>:8095
+services:
+  homeapp:
+    # Standard: das Image dieses Repositories. Bei einem anderen Konto/Repository in .env HOMEAPP_IMAGE setzen.
+    image: ${HOMEAPP_IMAGE:-ghcr.io/sebheider/homeapp:latest}
+    container_name: homeapp
+    restart: unless-stopped
+    ports:
+      # links: Port auf der Synology (8080 ist dort bereits belegt), rechts: Port im Container
+      - "8095:8080"
+    # Feste IP im eigenen Docker-Netzwerk (siehe "networks" unten)
+    networks:
+      homeapp_net:
+        ipv4_address: 172.40.0.10
+    volumes:
+      # Konfiguration (config.json) und Verlaufsdaten (history.json)
+      - ./data:/data
+    # Optionale Werte aus ".env" (fehlende bleiben leer = nicht gesetzt); Integrationen gehen auch in der App
+    environment:
+      TZ: Europe/Berlin
+      HTTPS: ${HTTPS:-}
+      TLS_CERT: ${TLS_CERT:-}
+      TLS_KEY: ${TLS_KEY:-}
+      APP_USER: ${APP_USER:-}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      IOBROKER_HOST: ${IOBROKER_HOST:-}
+      IOBROKER_PORT: ${IOBROKER_PORT:-}
+      IOBROKER_SECURE: ${IOBROKER_SECURE:-}
+      IOBROKER_PROTOCOL: ${IOBROKER_PROTOCOL:-}
+      IOBROKER_USER: ${IOBROKER_USER:-}
+      IOBROKER_PASSWORD: ${IOBROKER_PASSWORD:-}
+      IOBROKER_VERIFY_SSL: ${IOBROKER_VERIFY_SSL:-}
+      SS_HOST: ${SS_HOST:-}
+      SS_PORT: ${SS_PORT:-}
+      SS_HTTPS: ${SS_HTTPS:-}
+      SS_ACCOUNT: ${SS_ACCOUNT:-}
+      SS_PASSWORD: ${SS_PASSWORD:-}
+      SS_VERIFY_SSL: ${SS_VERIFY_SSL:-}
+
+# Eigenes Bridge-Netzwerk 172.40.0.0/24 (Gateway 172.40.0.1); der Container bekommt 172.40.0.10.
+# Existiert das Netzwerk bereits, siehe die Hinweise in der Datei docker-compose.yml.
+networks:
+  homeapp_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+          gateway: 172.40.0.1

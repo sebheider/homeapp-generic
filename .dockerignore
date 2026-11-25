@@ -1,0 +1,11 @@
+client/node_modules
+client/src
+client/public
+data
+.env
+.env.*
+.git
+*.log
+.vscode
+README.md
+CHANGELOG.md

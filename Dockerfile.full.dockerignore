@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+data
+.git
+.github
+.vscode
+*.log
+*.zip
+.env
+.env.*

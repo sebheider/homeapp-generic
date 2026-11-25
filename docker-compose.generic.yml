@@ -1,0 +1,36 @@
+# Platform-independent build from a clean checkout; existing Synology setups can
+# continue to use docker-compose.yml or docker-compose.ghcr.yml unchanged.
+services:
+  homeapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.full
+    image: homeapp:latest
+    restart: unless-stopped
+    ports:
+      - "${HOMEAPP_PORT:-8095}:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      HTTPS: ${HTTPS:-}
+      TLS_CERT: ${TLS_CERT:-}
+      TLS_KEY: ${TLS_KEY:-}
+      APP_USER: ${APP_USER:-}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      DEMO_MODE: ${DEMO_MODE:-}
+      IOBROKER_MODE: ${IOBROKER_MODE:-}
+      IOBROKER_HOST: ${IOBROKER_HOST:-}
+      IOBROKER_PORT: ${IOBROKER_PORT:-}
+      IOBROKER_SECURE: ${IOBROKER_SECURE:-}
+      IOBROKER_PROTOCOL: ${IOBROKER_PROTOCOL:-}
+      IOBROKER_USER: ${IOBROKER_USER:-}
+      IOBROKER_PASSWORD: ${IOBROKER_PASSWORD:-}
+      IOBROKER_VERIFY_SSL: ${IOBROKER_VERIFY_SSL:-}
+      SS_HOST: ${SS_HOST:-}
+      SS_PORT: ${SS_PORT:-}
+      SS_HTTPS: ${SS_HTTPS:-}
+      SS_ACCOUNT: ${SS_ACCOUNT:-}
+      SS_PASSWORD: ${SS_PASSWORD:-}
+      SS_DEVICE_ID: ${SS_DEVICE_ID:-}
+      SS_VERIFY_SSL: ${SS_VERIFY_SSL:-}

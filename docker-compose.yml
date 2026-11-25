@@ -1,0 +1,63 @@
+# HomeApp – docker compose / Synology Container Manager (Projekt)
+#
+# Ablage auf der Synology: /volume1/docker/HomeApp
+# Start:  cd /volume1/docker/HomeApp && sudo docker compose up -d --build
+# Danach: https://<IP-der-Synology>:8095
+#
+# Der Ordner ./data (= /volume1/docker/HomeApp/data) wird beim ersten Start angelegt
+# und enthält config.json und history.json.
+services:
+  homeapp:
+    build: .
+    image: homeapp:latest
+    container_name: homeapp
+    restart: unless-stopped
+    ports:
+      # links: Port auf der Synology (8080 ist dort bereits belegt), rechts: Port im Container
+      - "8095:8080"
+    # Feste IP im eigenen Docker-Netzwerk (siehe "networks" unten): 172.40.0.10
+    # Erreichbar ist sie von der Synology selbst und von anderen Containern im selben Netzwerk
+    # (z. B. https://172.40.0.10:8080). Aus dem LAN weiterhin über https://<IP-der-Synology>:8095.
+    networks:
+      homeapp_net:
+        ipv4_address: 172.40.0.10
+    volumes:
+      # Konfiguration (config.json) und Verlaufsdaten (history.json)
+      - ./data:/data
+    # Optionale Werte: Compose liest eine vorhandene Datei ".env" neben dieser Datei automatisch
+    # und setzt sie hier ein. Fehlt die Datei, bleiben die Werte leer (= nicht gesetzt).
+    # Integrationen lassen sich auch in der App unter "Einstellungen" eintragen.
+    environment:
+      TZ: Europe/Berlin
+      HTTPS: ${HTTPS:-}
+      TLS_CERT: ${TLS_CERT:-}
+      TLS_KEY: ${TLS_KEY:-}
+      APP_USER: ${APP_USER:-}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      IOBROKER_HOST: ${IOBROKER_HOST:-}
+      IOBROKER_PORT: ${IOBROKER_PORT:-}
+      IOBROKER_SECURE: ${IOBROKER_SECURE:-}
+      IOBROKER_PROTOCOL: ${IOBROKER_PROTOCOL:-}
+      IOBROKER_USER: ${IOBROKER_USER:-}
+      IOBROKER_PASSWORD: ${IOBROKER_PASSWORD:-}
+      IOBROKER_VERIFY_SSL: ${IOBROKER_VERIFY_SSL:-}
+      SS_HOST: ${SS_HOST:-}
+      SS_PORT: ${SS_PORT:-}
+      SS_HTTPS: ${SS_HTTPS:-}
+      SS_ACCOUNT: ${SS_ACCOUNT:-}
+      SS_PASSWORD: ${SS_PASSWORD:-}
+      SS_VERIFY_SSL: ${SS_VERIFY_SSL:-}
+
+# Eigenes Bridge-Netzwerk 172.40.0.0/24 (Gateway 172.40.0.1); der Container bekommt 172.40.0.10.
+# Existiert das Netzwerk bereits (z. B. von einem anderen Projekt), ersetze den Block durch:
+#   networks:
+#     homeapp_net:
+#       external: true
+#       name: <Name-des-vorhandenen-Netzwerks>
+networks:
+  homeapp_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+          gateway: 172.40.0.1

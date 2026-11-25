@@ -1,0 +1,38 @@
+# Legt für jeden Versions-Tag (z. B. v1.5.0) automatisch ein GitHub-Release an.
+# Die Release Notes sind der passende Abschnitt "## [1.5.0] – …" aus CHANGELOG.md.
+# Neue Version veröffentlichen:  CHANGELOG.md ergänzen, committen, dann
+#   git tag -a v1.5.0 -m "HomeApp 1.5.0" && git push origin main v1.5.0
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    name: GitHub-Release anlegen
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Release Notes aus CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # alles zwischen der Überschrift dieser Version und der nächsten Versions-Überschrift
+          awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::CHANGELOG.md enthält keinen Abschnitt für Version $version"
+            exit 1
+          fi
+          cat notes.md
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "HomeApp $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
