@@ -174,29 +174,20 @@ Installationen auf beliebigen Hosts einschließlich Synology ist der
 Die folgenden Legacy-Compose-Dateien verwenden weiterhin ein festes Netz. Voraussetzung:
 **Container Manager** (DSM 7.2+) bzw. Docker-Paket.
 
-### Variante A – Projekt im Container Manager (Dateien selbst kopieren)
+### Variante A – Projekt im Container Manager
 
-> **Aus GitHub geklont?** Im Repository fehlen bewusst `server/node_modules/` und `client/dist/` (gebaute bzw. installierte Dateien gehören nicht in Git). Das Standard-`Dockerfile` braucht sie, also einmal auf dem PC erzeugen (Node.js 20.19+ auf 20.x oder 22.12+):
->
-> ```bash
-> git clone <URL-deines-Repositories> HomeApp && cd HomeApp
-> cd server && npm ci --omit=dev && cd ..
-> cd client && npm ci && npm run build && cd ..
-> ```
->
-> Danach den Ordner wie unten beschrieben auf die Synology kopieren. Alternativ baut `Dockerfile.full` alles im Container (siehe Hinweis am Ende dieses Abschnitts).
+Docker baut die App beim Erstellen des Projekts komplett selbst (npm-Pakete und Frontend). Auf dem PC muss
+dafür **nichts installiert oder gebaut** werden.
 
-1. Den Ordner `HomeApp` auf die Synology kopieren, und zwar nach `/volume1/docker/HomeApp` (Groß-/Kleinschreibung beachten). Kopiert werden müssen:
-   - `server/` **inklusive `server/node_modules/`** (reines JavaScript, ca. 5 MB, plattformunabhängig),
-   - `client/dist/` (das fertig gebaute Frontend),
-   - `Dockerfile`, `docker-compose.yml`, `.dockerignore` und optional `.env`.
-
-   **Nicht** nötig sind `client/src/`, `client/node_modules/` und `data/` (entsteht beim ersten Start). Am einfachsten über die *File Station* (Ordner `docker` → neuer Ordner `HomeApp` → Dateien hochladen) oder per SMB-Freigabe.
-   Der Container-Build braucht dadurch **kein npm**; Internetzugriff wird nur für das Basis-Image `node:22-alpine` und die Installation von OpenSSL benötigt.
+1. Den Inhalt des Repositories nach `/volume1/docker/HomeApp` bringen (Groß-/Kleinschreibung beachten):
+   per `git clone https://github.com/sebheider/homeapp-generic.git HomeApp` oder über *GitHub → Code →
+   Download ZIP*, entpacken und den Ordnerinhalt mit der *File Station* bzw. per SMB-Freigabe hochladen.
+   `data/` entsteht beim ersten Start.
 2. Optional: `.env.example` nach `.env` kopieren und Werte eintragen (siehe unten).
 3. **Container Manager → Projekt → Erstellen**
    - Pfad: `/volume1/docker/HomeApp`
    - die vorhandene `docker-compose.yml` wird erkannt → *Weiter* → *Fertig*
+   - Der erste Build dauert einige Minuten (Internetzugriff für das Basis-Image `node:22-alpine`, die npm-Pakete sowie OpenSSL und ffmpeg).
 4. App öffnen: `https://<IP-der-Synology>:8095` (Browserwarnung beim selbstsignierten Zertifikat einmalig bestätigen; der Host-Port steht in der `docker-compose.yml` unter `ports`; auf der Synology ist 8080 häufig belegt – bei Bedarf links einfach eine andere Zahl eintragen)
 
 ### Variante B – per SSH
@@ -208,10 +199,9 @@ sudo docker compose up -d --build
 
 Konfiguration und Verlaufsdaten liegen in `./data` (Volume `/data` im Container) und bleiben bei Updates erhalten.
 
-**Update:** Nach Code-Änderungen auf dem PC `npm run build` (in `client/`) und bei geänderten Abhängigkeiten `npm install` (in `server/`) ausführen, die Dateien kopieren, dann `docker compose up -d --build` (bzw. im Container Manager das Projekt neu erstellen).
+**Update:** Neuen Stand holen (`git pull` bzw. neues ZIP über den Ordner kopieren – `data/` und `.env` bleiben erhalten), dann `docker compose up -d --build` (bzw. im Container Manager das Projekt neu erstellen).
 
-> **Alternative ohne vorgebaute Dateien:** `Dockerfile.full` baut alles im Container (`docker build -f Dockerfile.full -t homeapp:latest .`). Das setzt voraus, dass `npm` im Docker der Synology zuverlässig läuft – auf älteren Docker-Versionen bricht `npm ci` teils mit „Exit handler never called!“ ab. Dafür ist das Standard-`Dockerfile` gedacht.
-
+> **Bricht der Build mit „npm error Exit handler never called!“ ab?** Das passiert nur mit älteren Docker-Versionen mancher Synology-Modelle. Dann `Dockerfile.prebuilt` verwenden, das ohne npm im Container auskommt: in `docker-compose.yml` `build: .` durch `build: { context: ., dockerfile: Dockerfile.prebuilt }` ersetzen und die Dateien, die es kopiert, einmal auf einem PC erzeugen (Node.js 20.19+ auf 20.x oder 22.12+): in `server/` `npm ci --omit=dev`, in `client/` `npm ci && npm run build`. `server/node_modules/` und `client/dist/` dann mit auf die Synology kopieren. Ohne eigenen Build geht es auch mit dem fertigen Image ([Variante C](#variante-c--automatische-updates-aus-github-synology)).
 ### Variante C – Automatische Updates aus GitHub (Synology)
 
 Der Container Manager kann ein Git-Repository nicht selbst überwachen. Stattdessen übernimmt GitHub das Bauen und die Synology holt das fertige Image regelmäßig ab. Ein `git push` auf `main` reicht dann, kurz danach läuft die neue Version, **ohne Kopieren, ohne npm und ohne Build auf der Synology**.
@@ -953,7 +943,9 @@ Pakete, ein Modul-Katalog und Prüfsignaturen für Pakete.
 
 ```
 HomeApp/
-├─ Dockerfile, docker-compose.yml, .env.example
+├─ Dockerfile              Baut das Image komplett (npm-Pakete und Frontend im Container)
+├─ Dockerfile.prebuilt     Variante ohne npm für alte Docker-Versionen (vorgebaute Dateien)
+├─ docker-compose*.yml, .env.example
 ├─ server/                 Node.js (Express + ws)
 │  └─ src/
 │     ├─ index.js          Integrationen, WebSocket-Push, Serverstart
@@ -1116,7 +1108,7 @@ Wird von den Einstellungen verwaltet; zur Orientierung ein verkürztes Beispiel:
 | Externes Modul lässt sich nicht installieren | Die Meldung nennt das fehlerhafte Feld bzw. die Datei; Ursachen und Lösungen stehen in [docs/MODULES.md](./docs/MODULES.md#fehlermeldungen). Ein Modul mit einer `module.json` im JSON-Schema-fähigen Editor (`"$schema"`) zu schreiben, zeigt Fehler schon vorher. |
 | Externes Modul erscheint nicht in der Navigation / im Widget-Katalog | Unter *Einstellungen → Module* aktivieren und **Speichern**. Nur Module mit `page` bekommen eine Seite, nur Module mit `widget` ein Widget. |
 | Externes Modul zeigt „nicht zugeordnet“ / „Noch nicht eingerichtet“ | Datenpunkte des Moduls unter *Einstellungen → Module* zuordnen und speichern. |
-| Build bricht mit „npm error Exit handler never called!“ ab | Die generische Compose-Datei verwendet `Dockerfile.full` und führt `npm ci` im Build aus. Bei älteren Synology-Docker-Versionen ist das Legacy-`Dockerfile` eine Alternative: Dafür `server/node_modules/` und `client/dist/` vorab erstellen und mit hochladen. |
+| Build bricht mit „npm error Exit handler never called!“ ab | Das `Dockerfile` führt `npm ci` im Build aus; ältere Docker-Versionen mancher Synology-Modelle brechen dabei ab. Dann `Dockerfile.prebuilt` verwenden (ohne npm im Container, `server/node_modules/` und `client/dist/` vorher auf einem PC erzeugen) – siehe [Variante B](#variante-b--per-ssh) – oder das fertige Image aus [Variante C](#variante-c--automatische-updates-aus-github-synology). |
 | „Kameras leer“ | Surveillance-Station-Verbindung unter *Einstellungen* prüfen; das Konto braucht das Recht „Live-Ansicht“ (bei 2FA siehe unten). |
 | „DSM verlangt … 2-Faktor-Anmeldung … noch nicht eingerichtet“ (Code 406) | Für das Konto ist 2FA vorgeschrieben, aber noch nicht eingerichtet. In DSM unter *Persönlich → Konto* die 2-Faktor-Authentifizierung einrichten und danach den ersten Code in der App eintragen ([Anleitung](#konto-mit-2-faktor-anmeldung-2fa)) – oder die Pflicht in *Systemsteuerung → Sicherheit → Konto* aufheben. |
 | „Das Konto benötigt einen 2-Faktor-Code“ (403) / „Code falsch oder abgelaufen“ (404) | Aktuellen Code in den Einstellungen eintragen und sofort speichern (Codes gelten ~30 s). Die App versucht fehlerhafte Anmeldungen nicht erneut, um DSMs Auto-Block nicht auszulösen – nach dem Speichern wird neu verbunden. |

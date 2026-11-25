@@ -1,0 +1,33 @@
+# HomeApp image WITHOUT npm – only for old Docker versions on which the normal `Dockerfile` fails with
+# "npm error Exit handler never called!" (seen on some Synology models).
+#
+# Instead of building inside Docker it copies files that must be created beforehand on a PC
+# (Node.js 20.19+ / 22.12+):
+#   - server/node_modules   `npm ci --omit=dev` in server/ (pure JavaScript -> platform independent)
+#   - client/dist           `npm ci && npm run build` in client/
+# Use it in docker-compose.yml with   build: { context: ., dockerfile: Dockerfile.prebuilt }
+FROM node:22-alpine
+
+ENV NODE_ENV=production \
+    PORT=8080 \
+    DATA_DIR=/data \
+    PUBLIC_DIR=/app/public
+WORKDIR /app
+
+COPY server/package.json ./package.json
+COPY server/node_modules ./node_modules
+COPY server/src ./src
+COPY client/dist ./public
+
+# Configuration and history live in a volume so that updates keep them.
+# The container runs as root on purpose: a bind-mounted ./data folder that Docker creates on the
+# Synology belongs to root, and an unprivileged user could not write config.json into it.
+# ffmpeg converts the RTSP camera of Bambu Lab X1/H2/P2S printers into MJPEG
+RUN apk add --no-cache openssl ffmpeg && mkdir -p /data
+VOLUME ["/data"]
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node --input-type=module -e "import { httpsEnabled } from './src/tls.js'; const protocol = httpsEnabled() ? 'https' : 'http'; const { get } = await import('node:' + protocol); get(protocol + '://127.0.0.1:' + (process.env.PORT || 8080) + '/api/health', { rejectUnauthorized: false }, r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));" || exit 1
+
+CMD ["node", "src/index.js"]

@@ -15,6 +15,9 @@ Module: integrierte Funktionen abschalten, externe Module installieren – und H
 - **Home Assistant als Datenquelle** neben ioBroker (*Einstellungen → Verbindungen & Zugriff*): Verbindung über die WebSocket-API mit langlebigem Zugriffstoken, Live-Werte, Datenpunktsuche und automatische Erkennung von Lichtern, Schaltern, Rollläden, Thermostaten, Sensoren und Szenen. Variablen `HOMEASSISTANT_URL`, `HOMEASSISTANT_TOKEN`, `HOMEASSISTANT_VERIFY_SSL`.
 - Neue Variable `MODULES_DIR` für einen anderen Ordner der externen Module (Standard `data/modules`).
 
+### Geändert
+- **`docker compose up -d --build` funktioniert direkt aus dem Repository:** Das `Dockerfile` installiert die npm-Pakete und baut das Frontend im Container (bisher `Dockerfile.full`); vorher muss nichts mehr erstellt werden – auch nicht für den Synology Container Manager. Die bisherige Variante ohne npm im Container heißt jetzt `Dockerfile.prebuilt` und ist nur noch für ältere Docker-Versionen gedacht, bei denen `npm ci` mit „Exit handler never called!“ abbricht.
+
 ### Sicherheit
 - Ändernde API-Anfragen und WebSocket-Verbindungen von abgeschotteten Seiten (`Origin: null`) und fremden Websites (`Sec-Fetch-Site: cross-site`) werden abgelehnt.
 - Der Service Worker speichert keine Seiten mehr, die in Frames angezeigt werden.

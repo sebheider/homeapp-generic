@@ -1,10 +1,11 @@
-# Platform-independent build from a clean checkout. Existing Synology setups
-# can keep their original Compose files; see the README before migrating.
+# Platform-independent build from a clean checkout: Docker installs the npm packages and builds the
+# frontend itself, nothing has to be prepared.  docker compose -f docker-compose.generic.yml up -d --build
+# Existing Synology setups can keep their original Compose files; see the README before migrating.
 services:
   homeapp:
     build:
       context: .
-      dockerfile: Dockerfile.full
+      dockerfile: Dockerfile
     image: homeapp:latest
     restart: unless-stopped
     ports:

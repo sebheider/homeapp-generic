@@ -1,8 +1,12 @@
 # HomeApp – docker compose / Synology Container Manager (Projekt)
 #
-# Ablage auf der Synology: /volume1/docker/HomeApp
+# Ablage auf der Synology: /volume1/docker/HomeApp (Inhalt des Repositories, z. B. per git clone oder
+# GitHub → Code → Download ZIP)
 # Start:  cd /volume1/docker/HomeApp && sudo docker compose up -d --build
 # Danach: https://<IP-der-Synology>:8095
+#
+# Docker baut dabei alles selbst (npm-Pakete und Frontend), vorher muss nichts erstellt werden. Nur bei
+# „npm error Exit handler never called!“ (ältere Docker-Versionen) siehe README → Fehlersuche.
 #
 # Der Ordner ./data (= /volume1/docker/HomeApp/data) wird beim ersten Start angelegt
 # und enthält config.json und history.json.

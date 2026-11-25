@@ -1,11 +1,15 @@
+# Build context of Dockerfile (builds everything) and Dockerfile.prebuilt (copies prebuilt files).
+# server/node_modules and client/dist stay in the context: Dockerfile.prebuilt needs them, the normal
+# Dockerfile installs and builds its own and ignores them.
+.git
+.github
+.vscode
 client/node_modules
-client/src
-client/public
 data
+docs
+examples
+kiosk-agent
+*.log
+*.zip
 .env
 .env.*
-.git
-*.log
-.vscode
-README.md
-CHANGELOG.md
