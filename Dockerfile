@@ -1,27 +1,44 @@
-# HomeApp runtime image.
-#
-# This build runs NO npm inside the container (that failed on some Synology Docker versions with
-# "npm error Exit handler never called!"). Instead the project folder already contains
-#   - server/node_modules   (pure JavaScript packages, no native code -> platform independent)
-#   - client/dist           (the built frontend)
-# Rebuild them on a PC with `npm install` / `npm run build` when the code changes.
-# For a fully self-contained build see Dockerfile.full.
-FROM node:22-alpine
+# HomeApp image – builds everything inside Docker straight from a Git checkout:
+#   docker compose up -d --build      (or: docker build -t homeapp:latest .)
+# Nothing has to be installed or built beforehand: the npm packages and the frontend are built in the
+# stages below. Old Docker versions on which `npm ci` aborts with "Exit handler never called!" (some
+# Synology models) can use Dockerfile.prebuilt instead, see README → Fehlersuche.
 
+# ---------------------------------------------------------------------------
+# Stage 1: build the React frontend (Vite + Tailwind)
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS client-build
+WORKDIR /build/client
+COPY client/package.json client/package-lock.json ./
+RUN npm ci
+COPY client/ ./
+# the frontend shows version and release notes from the changelog (src/lib/version.ts)
+COPY CHANGELOG.md /build/CHANGELOG.md
+RUN npm run build
+
+# ---------------------------------------------------------------------------
+# Stage 2: install production dependencies of the Node.js backend
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS server-deps
+WORKDIR /build/server
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
+
+# ---------------------------------------------------------------------------
+# Stage 3: small runtime image
+# ---------------------------------------------------------------------------
+FROM node:22-alpine
 ENV NODE_ENV=production \
     PORT=8080 \
     DATA_DIR=/data \
     PUBLIC_DIR=/app/public
 WORKDIR /app
 
+COPY --from=server-deps /build/server/node_modules ./node_modules
 COPY server/package.json ./package.json
-COPY server/node_modules ./node_modules
 COPY server/src ./src
-COPY client/dist ./public
+COPY --from=client-build /build/client/dist ./public
 
-# Configuration and history live in a volume so that updates keep them.
-# The container runs as root on purpose: a bind-mounted ./data folder that Docker creates on the
-# Synology belongs to root, and an unprivileged user could not write config.json into it.
 # ffmpeg converts the RTSP camera of Bambu Lab X1/H2/P2S printers into MJPEG
 RUN apk add --no-cache openssl ffmpeg && mkdir -p /data
 VOLUME ["/data"]
