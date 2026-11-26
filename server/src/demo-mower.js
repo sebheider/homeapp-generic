@@ -9,7 +9,7 @@
  * show. {@link DemoMower#command} handles the buttons (start, pause, resume, home, refresh, resetMap)
  * and a written charging station position.
  */
-import { clamp, round } from './util.js';
+import { clamp, round } from './util/number.js';
 
 /** Lawn in mower coordinates (metres), lane spacing and charging station. */
 const LAWN = { minX: -7, maxX: 7, minY: -11, maxY: -1 };

@@ -1,5 +1,8 @@
 /** Small generic React hooks shared by several components. */
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useId, useState, type RefObject } from 'react';
+
+/** `useId` without the colons, so it can be used in `url(#…)` references of SVG gradients, masks and filters. */
+export const useSvgId = (prefix: string) => `${prefix}-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
 
 /**
  * Current time in milliseconds, refreshed every `intervalMs`.
@@ -27,4 +30,17 @@ export function useElementSize(ref: RefObject<HTMLElement | null>, initial: { w:
     return () => ro.disconnect();
   }, [mounted]);
   return size;
+}
+
+/** Whether a CSS media query matches (follows changes, e.g. rotating a tablet). */
+export function useMedia(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return match;
 }

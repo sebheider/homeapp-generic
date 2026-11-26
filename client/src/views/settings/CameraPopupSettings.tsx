@@ -2,17 +2,12 @@
 import { Eye } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import type { PopupPosition, PopupSize } from '../../lib/types';
-import { Card, Field, NumInput, Switch, sectionSetter, type TabProps } from './shared';
+import { Card, Field, NumInput, POPUP_SIZES, Switch, sectionSetter, type TabProps } from './shared';
 import { PopupRulesCard } from './PopupRulesCard';
 
 const POSITIONS: { value: PopupPosition; label: string }[] = [
   { value: 'center', label: 'Mittig (über der App)' },
   { value: 'corner', label: 'Klein in der Ecke' },
-];
-const SIZES: { value: PopupSize; label: string }[] = [
-  { value: 'medium', label: 'Mittel' },
-  { value: 'large', label: 'Groß' },
-  { value: 'full', label: 'Fast Vollbild' },
 ];
 
 export function CameraPopupSettings({ draft, setDraft }: Pick<TabProps, 'draft' | 'setDraft'>) {
@@ -39,7 +34,7 @@ export function CameraPopupSettings({ draft, setDraft }: Pick<TabProps, 'draft' 
           </Field>
           <Field label="Größe">
             <select className="field" value={a.popupSize ?? 'large'} onChange={(e) => set({ popupSize: e.target.value as PopupSize })}>
-              {SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {POPUP_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </Field>
           <Field label="Kamerabild in der Einblendung aktualisieren (Sekunden)" hint={a.popupLiveVideo !== false ? 'Gilt nur, solange das Live-Video nicht verfügbar ist.' : undefined}><NumInput value={a.popupSnapshotRefreshSeconds ?? 1} onChange={(v) => set({ popupSnapshotRefreshSeconds: v ?? 1 })} /></Field>

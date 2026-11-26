@@ -12,7 +12,7 @@ import { Toggle } from '../../components/ui';
 import { WasteBin } from '../../components/Waste';
 import { Card, Field, dimUnless, toggleItem, type TabProps } from './shared';
 
-export const DEFAULT_WASTE: WasteConfig = { enabled: false, url: '', remindFrom: '17:00', remindUntil: '10:00', severity: 'warning', hidden: [] };
+const DEFAULT_WASTE: WasteConfig = { enabled: false, url: '', remindFrom: '17:00', remindUntil: '10:00', severity: 'warning', hidden: [] };
 
 /** Warns when the calendar runs out soon (the yearly calendars of many disposal companies end on 31 Dec). */
 function ExpiryNote({ last }: { last: string | null | undefined }) {

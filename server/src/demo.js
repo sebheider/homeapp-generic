@@ -12,7 +12,9 @@ import { EventEmitter } from 'node:events';
 import { demoContent, demoInitialStates } from './demo-content.js';
 import { DemoMower, MOWER_COMMANDS } from './demo-mower.js';
 import { coerce } from './iobroker.js';
-import { clamp, round, searchObjects } from './util.js';
+import { clamp, round } from './util/number.js';
+import { searchObjects } from './util/states.js';
+import { addTimeout, clearTimeouts } from './util/timers.js';
 
 const TICK_MS = 2000;
 
@@ -71,8 +73,7 @@ export class DemoSource extends EventEmitter {
   stop() {
     clearInterval(this.timer);
     this.timer = null;
-    for (const t of this.timers) clearTimeout(t);
-    this.timers.clear();
+    clearTimeouts(this.timers);
     for (const t of this.travel.values()) clearInterval(t);
     this.travel.clear();
     this.connected = false;
@@ -80,11 +81,7 @@ export class DemoSource extends EventEmitter {
 
   /** Runs `fn` once after `ms` unless the simulation is stopped first. */
   later(fn, ms) {
-    const t = setTimeout(() => {
-      this.timers.delete(t);
-      fn();
-    }, ms);
-    this.timers.add(t);
+    addTimeout(this.timers, fn, ms);
   }
 
   /** The demo always provides all of its states; nothing to subscribe. */

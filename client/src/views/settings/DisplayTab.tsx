@@ -9,7 +9,8 @@ import { useStore } from '../../lib/store';
 import { api } from '../../lib/api';
 import type { KioskAgent } from '../../lib/types';
 import { normalizeDashboard } from '../../lib/widgets';
-import { KIOSK_ZOOMS, kioskScale, kioskState, menuMode, menuModeSettings, screenHint, useScreenInfo, type DashboardDesign, type DisplaySettings, type EffectsLevel, type MenuMode } from '../../lib/display';
+import { KIOSK_ZOOMS, kioskScale, kioskState, menuMode, menuModeSettings, screenHint, type DashboardDesign, type DisplaySettings, type EffectsLevel, type MenuMode } from '../../lib/display';
+import { useScreenInfo } from '../../lib/displayHooks';
 import { Card, Field, NumInput, Switch, dimUnless } from './shared';
 
 const DIM_LEVELS = [

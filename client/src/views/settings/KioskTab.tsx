@@ -13,7 +13,7 @@ import type { KioskAgent, KioskConfig, Severity } from '../../lib/types';
 import { Card, CopyUrl, Field, NumInput, Switch, dimUnless, type TabProps } from './shared';
 import { ALL_DAYS, TimeWindowList } from './TimeWindows';
 
-export const DEFAULT_KIOSK: KioskConfig = {
+const DEFAULT_KIOSK: KioskConfig = {
   screenOff: true, screenOffSeconds: 180,
   alwaysOn: [], wakeOnCamera: true, wakeOnAlerts: true, wakeSeverity: 'info', wakeSeconds: 120,
   quietHours: [{ days: ALL_DAYS, from: '22:00', to: '06:00' }],

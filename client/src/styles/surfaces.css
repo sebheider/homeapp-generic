@@ -1,0 +1,91 @@
+/* Glass cards and tiles, icon bubbles, card grids, the root font size of large and scaled screens, section titles. */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: var(--shadow);
+}
+/* backdrop-filter makes every card its own stacking context: lift the card holding an open
+   datapoint hit list so the list overlaps the following cards instead of disappearing behind them */
+.glass:has(.picker-list):not(.absolute, .fixed, .sticky) { position: relative; z-index: 30; }
+.tile {
+  position: relative; overflow: hidden; isolation: isolate;
+  transition: background 0.25s, border-color 0.25s, box-shadow 0.35s, transform 0.2s;
+}
+.tile.interactive { cursor: pointer; }
+.tile.interactive:hover { background: var(--card-hover); }
+.tile.interactive:active { transform: scale(0.985); }
+/* lift clickable tiles slightly under a mouse (not on touch screens, where hover sticks) */
+@media (hover: hover) {
+  .tile.interactive:hover { transform: translateY(-2px); }
+  .tile.interactive:active { transform: translateY(-1px) scale(0.985); }
+}
+.tile.active {
+  border-color: color-mix(in srgb, var(--tone) 45%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tone) 20%, var(--card)), var(--card) 70%);
+  box-shadow: var(--shadow), 0 0 44px -14px color-mix(in srgb, var(--tone) 70%, transparent);
+}
+/* soft light cone of a switched-on lamp; `--level` (0..1, set by the light card) follows the brightness */
+.tile.tone-light::before {
+  content: ''; position: absolute; z-index: -1; inset: -40% 30% 30% -30%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tone) 55%, transparent), transparent);
+  opacity: 0; transition: opacity .6s ease;
+}
+.tile.tone-light.active::before { opacity: calc(.15 + var(--level, 1) * .6); }
+
+.icon-bubble {
+  display: grid; place-items: center; flex: none;
+  width: 2.75rem; height: 2.75rem; border-radius: 1rem;
+  background: color-mix(in srgb, var(--muted) 16%, transparent);
+  color: var(--muted);
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+}
+.active .icon-bubble, .icon-bubble.on {
+  background: color-mix(in srgb, var(--tone) 24%, transparent);
+  color: var(--tone);
+  box-shadow: 0 0 22px -4px color-mix(in srgb, var(--tone) 65%, transparent);
+}
+/* glow behind the icon of lights (by brightness, in the light colour) and running devices; --glow 0…1 */
+.icon-bubble.halo { position: relative; }
+.icon-bubble.halo::after {
+  content: ''; position: absolute; z-index: -1; inset: -55%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tone) 60%, transparent), transparent);
+  opacity: calc(.2 + var(--glow, 1) * .8); animation: halo 3.6s ease-in-out infinite;
+}
+.icon-bubble.halo > svg { color: color-mix(in srgb, var(--tone) 70%, #fff); filter: drop-shadow(0 0 calc(1px + var(--glow, 1) * 5px) var(--tone)); }
+@keyframes halo { 0%, 100% { transform: scale(.88); } 50% { transform: scale(1.05); } }
+/* short "pop" of the icon when a tile switches on */
+.tile.active .icon-bubble:not([class*='anim-']), .tile .icon-bubble.on:not([class*='anim-']) { animation: bubble-pop .45s cubic-bezier(.3, 1.6, .5, 1); }
+
+.grid-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); }
+.grid-wide { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }
+/* portrait tablets / 10" kiosk in portrait: two wide cards side by side instead of one long column */
+@media (orientation: portrait) and (min-width: 600px) {
+  .grid-wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); }
+}
+@media (min-width: 1900px) {
+  .grid-cards { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1.25rem; }
+  html { font-size: 18px; }
+}
+@media (min-width: 2500px) { html { font-size: 22px; } }
+/*
+ * Kiosk mode on a screen bigger than 1280×800 (e.g. a 10" display with 1920×1200): App sets
+ * `data-ui-scale` and `--ui-scale` (lib/display.ts `kioskScale`). Everything sized in rem grows with
+ * the root font; icons with a fixed pixel size (lucide, weather symbols) are zoomed by the same factor.
+ */
+html[data-ui-scale] { font-size: calc(16px * var(--ui-scale)); }
+html[data-ui-scale] :is(svg.lucide, svg.wx-icon) { zoom: var(--ui-scale); }
+/* scaled kiosk in portrait (e.g. 1200×1920 = 800 base wide): wide layouts switched on by the real-pixel `lg`
+   breakpoint would be squeezed, so settings use the area picker as on a normal portrait tablet */
+@media (orientation: portrait) {
+  html[data-ui-scale] .settings-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  html[data-ui-scale] .settings-nav { display: none; }
+  html[data-ui-scale] .settings-select { display: block; }
+  /* device pages: the room sections flow into two columns, so rooms with one or two devices leave no gaps */
+  html[data-ui-scale] .section-flow { columns: 2; column-gap: 1.25rem; }
+  html[data-ui-scale] .section-flow > section { break-inside: avoid; }
+  html[data-ui-scale] .section-flow :is(.grid-cards, .grid-wide) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.section-title { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }

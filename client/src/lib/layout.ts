@@ -33,10 +33,10 @@ export const GROUP_MODE_LABELS: Record<LayoutPage, Record<GroupMode, string>> = 
 };
 
 /** Sensor kinds shown on the climate page. */
-export const CLIMATE_SENSOR_KINDS = ['temperature', 'humidity', 'co2'];
+const CLIMATE_SENSOR_KINDS = ['temperature', 'humidity', 'co2'];
 
 /** The devices that belong on a page (before hiding). */
-export function pageDevices(page: LayoutPage, devices: Device[]): Device[] {
+function pageDevices(page: LayoutPage, devices: Device[]): Device[] {
   if (page === 'rooms') return devices;
   if (page === 'lights') return devices.filter((d) => d.type === 'light' || d.type === 'switch');
   return devices.filter((d) => d.type === 'heatpump' || d.type === 'climate' || d.type === 'thermostat' || (d.type === 'sensor' && CLIMATE_SENSOR_KINDS.includes(d.options.kind)));
@@ -96,7 +96,7 @@ function defaultGroups(page: LayoutPage, devices: Device[], rooms: Room[]): Devi
  * Sorts `items` by their position in `order`; items that are not listed keep their relative
  * order and follow after the listed ones.
  */
-export function sortByOrder<T>(items: T[], keyOf: (x: T) => string, order: string[]): T[] {
+function sortByOrder<T>(items: T[], keyOf: (x: T) => string, order: string[]): T[] {
   const pos = new Map(order.map((k, i) => [k, i]));
   const rank = (x: T) => pos.get(keyOf(x)) ?? order.length;
   // Array.prototype.sort is stable, so unlisted items stay in their original order

@@ -1,0 +1,32 @@
+/*
+ * Freely designable start page (views/CustomDashboard.tsx): every widget fills its grid cell; content
+ * that does not fit scrolls inside the panel, so the frame and corner brackets stay in place. On phones
+ * the cells only have a minimum height and grow with their content.
+ */
+.cdash-grid { display: grid; position: relative; }
+.cdash-cell { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cdash-cell > :first-child { flex: 1 1 auto; min-height: 0; }
+.cdash-cell > .hud { display: flex; flex-direction: column; }
+.cdash-cell > .hud > .relative:last-child { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.cdash-cell > .hud > .relative:last-child::-webkit-scrollbar { display: none; }
+.cdash-cell > .hud-cam { aspect-ratio: auto; min-height: 6rem; }
+.cdash-cell > .hud > .cdash-fit { container-type: size; overflow: hidden; }
+/* content that grows with a larger widget (ScaleUp in components/hud/scale.tsx sets width and transform) */
+.scale-up-inner { display: flow-root; transform-origin: 0 0; }
+.scale-up-inner.is-stretch { display: flex; flex-direction: column; }
+.scale-up-inner.is-stretch > * { flex: 1 1 auto; }
+/* small switch tiles ("Kleine Schalter" of the lights and devices widgets) */
+.grid-switches { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); }
+/* editing: column stripes with row marks, a dashed frame and controls over every widget */
+.cdash-col {
+  pointer-events: none; border-radius: .6rem;
+  background: repeating-linear-gradient(to bottom, color-mix(in srgb, #a78bfa 9%, transparent) 0 var(--row), transparent var(--row) var(--pitch));
+}
+.cdash-edit {
+  position: absolute; inset: 0; z-index: 5; overflow: hidden; border-radius: 1.5rem;
+  border: 2px dashed color-mix(in srgb, #a78bfa 70%, transparent);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+}
+.cdash-edit.is-active { z-index: 6; border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, #a78bfa 35%, transparent), 0 12px 30px rgba(0, 0, 0, .3); }
+.cdash-bar { margin: .3rem; border-radius: 1rem; background: color-mix(in srgb, var(--bg2) 90%, transparent); }
+.cdash-resize { position: absolute; right: .3rem; bottom: .3rem; cursor: nwse-resize; }

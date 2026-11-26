@@ -951,7 +951,7 @@ Es gibt zwei Wege, HomeApp zu erweitern:
   optional HTML/CSS/JS, das ohne Änderung am Quellcode über *Einstellungen → Module* installiert wird.
   Format, SDK und Sicherheitsmodell beschreibt [docs/MODULES.md](./docs/MODULES.md), das Schema
   [docs/module.schema.json](./docs/module.schema.json), Beispiele liegen unter [examples/modules/](./examples/modules/).
-  Server: `server/src/extensions.js` (Prüfung, Pakete, Routen), App: `client/src/components/Extension.tsx`,
+  Server: `server/src/extensions/` (Prüfung, Pakete, Registry, Routen), App: `client/src/components/Extension.tsx`,
   `client/src/lib/extensions.ts` und `client/public/module-sdk.js`.
 - **Integrierte Module** (Änderung am Quellcode): für alles, was im Server laufen muss – eigene
   Integrationen, Hintergrunddienste, API-Routen, Benachrichtigungen. Das Abschalten integrierter Module
@@ -974,12 +974,15 @@ HomeApp/
 ├─ docker-compose*.yml, .env.example
 ├─ server/                 Node.js (Express + ws)
 │  └─ src/
-│     ├─ index.js          Integrationen, WebSocket-Push, Serverstart
+│     ├─ index.js          Serverstart (setzt die Teile aus app/ zusammen)
+│     ├─ app/              Integrationen anlegen, Ereignisse verdrahten, Benachrichtigungen, Konfigurations-
+│     │                    wechsel, WebSocket-Push, Express-App
 │     ├─ api.js            Authentifizierte REST-API-Routen
 │     ├─ alerts.js         Benachrichtigungen (Regeln prüfen, aktive Meldungen, Quittierung)
 │     ├─ auth.js           Zugriffsschutz (Basic Auth, Token-Vergleich)
-│     ├─ config.js         Konfiguration (config.json + Umgebung)
+│     ├─ config/           Konfiguration (Vorgaben, Umgebung, wirksame Werte, config.json-Speicher)
 │     ├─ iobroker.js       ioBroker-Verbindung (ws / socket.io, OAuth2)
+│     ├─ homeassistant.js  Home-Assistant-Verbindung (WebSocket-API)
 │     ├─ permissions.js    Schreibrechte-Prüfung + Korrektur-Skript
 │     ├─ synology.js       Surveillance Station Web API
 │     ├─ cameras.js        Kameraliste (Surveillance Station + eigene Anpassungen)
@@ -988,22 +991,22 @@ HomeApp/
 │     ├─ history.js        Verlaufsdaten (Minutenraster, 48 h)
 │     ├─ layouts.js        Gruppierung/Reihenfolge der Seiten Licht und Klima
 │     ├─ weather.js        Internet-Wetter, Ortssuche, Regenradar
-│     ├─ octoprint.js      3D-Drucker über OctoPrint (Zustand, Webcam, Einblendungen, Demo-Drucker)
-│     ├─ bambu.js          Bambu-Lab-Drucker lokal (MQTT-Bericht, Kamera, Befehle, Demo)
+│     ├─ octoprint/        3D-Drucker über OctoPrint (Zustand, Webcam, Einblendungen, Demo-Drucker)
+│     ├─ bambu/            Bambu-Lab-Drucker lokal (MQTT-Bericht, Zustand, Kamera, Befehle, Demo)
 │     ├─ mqtt.js           schlanker MQTT-Client (3.1.1 über TLS) für Bambu Lab
-│     ├─ spotify.js        Spotify Connect (Anmeldung per PKCE, Wiedergabe, Suche, Demo-Player)
-│     ├─ kiosk.js          Kiosk-Sensoren (Meldungen der Pi-Agenten → lokale Datenpunkte)
-│     ├─ waste.js          Müllabfuhr (ICS-Kalender, Erinnerungen)
+│     ├─ spotify/          Spotify Connect (Anmeldung per PKCE, Web API, Befehle, Demo-Player)
+│     ├─ kiosk/            Kiosk-Sensoren (Meldungen der Pi-Agenten → lokale Datenpunkte)
+│     ├─ waste/            Müllabfuhr (ICS-Kalender, Abfallarten, Erinnerungen)
 │     ├─ ventilation.js    Lüftungsempfehlung (absolute Feuchte, CO₂, Kühlen)
 │     ├─ pushover.js       Push-Nachrichten über Pushover (Ereignisse, Prioritäten, Ruhezeit)
 │     ├─ modules.js        Integrierte Module (Wetter, 3D-Drucker, Spotify, Mähroboter) ein/aus
-│     ├─ extensions.js     Externe Module (Manifest-Prüfung, ZIP-Pakete, Installation, Sandbox-Auslieferung)
-│     ├─ homeassistant.js  Home-Assistant-Verbindung (WebSocket-API)
-│     ├─ discovery.js      Automatische Geräteerkennung
+│     ├─ extensions/       Externe Module (Manifest-Prüfung, ZIP-Pakete, Registry, Routen)
+│     ├─ discovery/        Automatische Geräteerkennung (ein Modul je Adapter)
 │     ├─ demo.js           Simulierte Installation (Demo-Modus)
 │     ├─ demo-content.js   Beispielräume/-geräte
 │     ├─ demo-mower.js     Simulierter Mähroboter (Datenpunkte wie der navimow-Adapter)
-│     └─ util.js           Kleine gemeinsame Hilfsfunktionen
+│     └─ util/             Gemeinsame Hilfsfunktionen (Zahlen, Text, Objekte, Timer, atomares Schreiben)
+│                          Die gleichnamigen Dateien neben den Ordnern (z. B. bambu.js) sind die Einstiegspunkte.
 ├─ kiosk-agent/            Python-Dienst für den Raspberry Pi (LD2410, BH1750, SCD41, Display an/aus/Helligkeit)
 ├─ docs/                   Screenshots, Anleitung und JSON-Schema für externe Module (MODULES.md, module.schema.json)
 ├─ examples/modules/       Beispielmodule: pool (nur Kacheln), wallbox (eigene HTML-Seite)
@@ -1011,13 +1014,15 @@ HomeApp/
    ├─ public/module-sdk.js SDK für die HTML-Seiten externer Module
    └─ src/
       ├─ App.tsx           Layout, Navigation, Seiten-Wechsel (Ansichten werden bei Bedarf geladen)
-      ├─ lib/              Store, API, Typen, Gerätetypen, Icons, Format, Kennzahlen der Übersicht,
-      │                    Anzeige-Einstellungen, PWA
-      ├─ components/       Gerätekarten, Energiefluss, Diagramme, Kameras, 3D-Drucker, Spotify-Player, Mähroboter-Karte, HUD-Anzeigen der Übersicht,
-      │                    digitaler Zwilling (HomeTwin), Kiosk-Verhalten (DisplayEffects), Seiten/Widgets externer Module (Extension), UI
+      ├─ index.css         Einstieg der Styles; die Teile liegen in styles/
+      ├─ lib/              API, Gerätetypen, Icons, Format, Kennzahlen der Übersicht, Anzeige-Einstellungen, PWA;
+      │                    store/ (Zustand) und types/ (Typen je Bereich)
+      ├─ components/       Gerätekarten (device-cards/), Kameras (cameras/), Wetter (weather/), HUD-Anzeigen (hud/),
+      │                    Navigation (navigation/), digitaler Zwilling (home-twin/), Energiefluss, Diagramme,
+      │                    3D-Drucker, Spotify-Player, Mähroboter-Karte, Kiosk-Verhalten, Seiten/Widgets externer Module
       ├─ assets/           Gebündelte Bilder (Mondbild des Wettersymbols)
-      └─ views/            Übersicht (Standard, Nexus, Eigene), Wetter, Räume, Licht, Klima, Energie, Kameras,
-                           Spotify, 3D-Drucker, Mähroboter, Radar, Einstellungen
+      └─ views/            Übersicht (dashboard/ Standard, nexus/ Nexus, custom-dashboard/ Eigene), Wetter, Räume,
+                           Licht, Klima, Energie, Kameras, Spotify, 3D-Drucker, Mähroboter, Radar, Einstellungen
 ```
 
 ---

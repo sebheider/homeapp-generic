@@ -10,7 +10,7 @@
  * internet is unreachable the last result is served with `stale: true`.
  * Times are Unix seconds; `timezone` is the IANA name of the location so the browser can format them correctly.
  */
-import { round } from './util.js';
+import { finiteOrNull, round } from './util/number.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const GEOCODE_URL = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -23,10 +23,8 @@ const CURRENT = 'temperature_2m,apparent_temperature,relative_humidity_2m,precip
 const HOURLY = 'temperature_2m,precipitation_probability,precipitation,weather_code,uv_index,is_day';
 const DAILY = 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,daylight_duration,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max';
 
-/** `typeof v === 'number'` and finite, otherwise null. */
-const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 /** Rounded number or null (missing values stay missing). */
-const rnd = (v, d = 1) => (num(v) === null ? null : round(v, d));
+const rnd = (v, d = 1) => (finiteOrNull(v) === null ? null : round(v, d));
 
 /** Converts the column-oriented Open-Meteo response into row objects used by the app. */
 export function normalizeForecast(raw, now = Date.now()) {
@@ -35,42 +33,42 @@ export function normalizeForecast(raw, now = Date.now()) {
   return {
     fetchedAt: now,
     timezone: raw.timezone,
-    elevation: num(raw.elevation),
+    elevation: finiteOrNull(raw.elevation),
     current: {
       time: c.time,
       temp: rnd(c.temperature_2m),
       feelsLike: rnd(c.apparent_temperature),
-      humidity: num(c.relative_humidity_2m),
+      humidity: finiteOrNull(c.relative_humidity_2m),
       pressure: rnd(c.pressure_msl),
       wind: rnd(c.wind_speed_10m),
       gust: rnd(c.wind_gusts_10m),
-      windDir: num(c.wind_direction_10m),
+      windDir: finiteOrNull(c.wind_direction_10m),
       precip: rnd(c.precipitation),
-      cloud: num(c.cloud_cover),
-      code: num(c.weather_code),
+      cloud: finiteOrNull(c.cloud_cover),
+      code: finiteOrNull(c.weather_code),
       isDay: c.is_day === 1,
       uv: rnd(c.uv_index),
     },
     hourly: rows(raw.hourly, (t, i, h) => ({
       t,
       temp: rnd(h.temperature_2m?.[i]),
-      pop: num(h.precipitation_probability?.[i]),
+      pop: finiteOrNull(h.precipitation_probability?.[i]),
       precip: rnd(h.precipitation?.[i]),
-      code: num(h.weather_code?.[i]),
+      code: finiteOrNull(h.weather_code?.[i]),
       uv: rnd(h.uv_index?.[i]),
       isDay: h.is_day?.[i] === 1,
     })),
     daily: rows(raw.daily, (t, i, d) => ({
       t,
-      code: num(d.weather_code?.[i]),
+      code: finiteOrNull(d.weather_code?.[i]),
       tMax: rnd(d.temperature_2m_max?.[i]),
       tMin: rnd(d.temperature_2m_min?.[i]),
-      sunrise: num(d.sunrise?.[i]),
-      sunset: num(d.sunset?.[i]),
-      daylight: num(d.daylight_duration?.[i]),
+      sunrise: finiteOrNull(d.sunrise?.[i]),
+      sunset: finiteOrNull(d.sunset?.[i]),
+      daylight: finiteOrNull(d.daylight_duration?.[i]),
       uvMax: rnd(d.uv_index_max?.[i]),
       precip: rnd(d.precipitation_sum?.[i]),
-      pop: num(d.precipitation_probability_max?.[i]),
+      pop: finiteOrNull(d.precipitation_probability_max?.[i]),
       wind: rnd(d.wind_speed_10m_max?.[i]),
     })),
     // precipitation per 15 minutes (mm); empty outside of regions with a nowcast model
@@ -218,7 +216,7 @@ export class WeatherService {
       region: [r.admin1, r.country].filter(Boolean).join(', '),
       latitude: rnd(r.latitude, 4),
       longitude: rnd(r.longitude, 4),
-      elevation: num(r.elevation),
+      elevation: finiteOrNull(r.elevation),
     }));
   }
 

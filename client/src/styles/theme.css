@@ -1,0 +1,65 @@
+/* Theme: Tailwind tokens, the dark / light colour schemes, accent tones and the page base. */
+@theme inline {
+  --font-sans: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-line: var(--line);
+}
+
+:root,
+[data-theme='dark'] {
+  --bg: #0a0e1c;
+  --bg2: #101733;
+  --fg: #eef1fb;
+  --muted: #8c96b8;
+  --card: rgba(255, 255, 255, 0.055);
+  --card-hover: rgba(255, 255, 255, 0.095);
+  --line: rgba(255, 255, 255, 0.1);
+  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.6);
+  --blob1: rgba(124, 92, 255, 0.35);
+  --blob2: rgba(34, 211, 238, 0.22);
+  --blob3: rgba(251, 146, 60, 0.16);
+  --track: rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #eef1f9;
+  --bg2: #e1e7f5;
+  --fg: #151a30;
+  --muted: #5b6585;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-hover: rgba(255, 255, 255, 0.95);
+  --line: rgba(20, 30, 70, 0.1);
+  --shadow: 0 10px 30px -14px rgba(40, 50, 100, 0.35);
+  --blob1: rgba(124, 92, 255, 0.22);
+  --blob2: rgba(34, 211, 238, 0.22);
+  --blob3: rgba(251, 146, 60, 0.18);
+  --track: rgba(20, 30, 70, 0.12);
+  color-scheme: light;
+}
+
+/* accent colours, selected per card via the tone-* classes */
+.tone-light { --tone: #fbbf24; }
+.tone-heat { --tone: #fb7185; }
+.tone-warm { --tone: #fb923c; }
+.tone-cool { --tone: #38bdf8; }
+.tone-green { --tone: #34d399; }
+.tone-energy { --tone: #facc15; }
+.tone-violet { --tone: #a78bfa; }
+.tone-alert { --tone: #f43f5e; }
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+input, select, textarea { user-select: text; }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }

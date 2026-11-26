@@ -1,0 +1,75 @@
+/**
+ * German texts of the Bambu Lab printer states, print stages and speed levels.
+ */
+
+/** German text of `gcode_state`. */
+export const GCODE_STATE_TEXT = {
+  IDLE: 'Bereit',
+  PREPARE: 'Vorbereitung',
+  SLICING: 'Slicen',
+  RUNNING: 'Druckt',
+  PAUSE: 'Pausiert',
+  FINISH: 'Fertig',
+  FAILED: 'Fehlgeschlagen',
+  INIT: 'Startet',
+  OFFLINE: 'Offline',
+};
+
+/** German labels of the print stages (`stg_cur`). */
+export const STAGES = {
+  0: 'Druckt',
+  1: 'Bett-Nivellierung',
+  2: 'Heizbett vorheizen',
+  3: 'Vibrationskompensation',
+  4: 'Filamentwechsel',
+  5: 'Pause (M400)',
+  6: 'Pause: Filament leer',
+  7: 'Düse aufheizen',
+  8: 'Extrusion kalibrieren',
+  9: 'Druckbett scannen',
+  10: 'Erste Schicht prüfen',
+  11: 'Druckplatte erkennen',
+  12: 'Mikro-Lidar kalibrieren',
+  13: 'Druckkopf referenzieren',
+  14: 'Düsenspitze reinigen',
+  15: 'Extrudertemperatur prüfen',
+  16: 'Vom Benutzer pausiert',
+  17: 'Pause: Frontabdeckung gefallen',
+  18: 'Mikro-Lidar kalibrieren',
+  19: 'Flussrate kalibrieren',
+  20: 'Pause: Düsentemperatur gestört',
+  21: 'Pause: Heizbetttemperatur gestört',
+  22: 'Filament entladen',
+  23: 'Pause: Schrittverlust',
+  24: 'Filament laden',
+  25: 'Motorgeräusch kalibrieren',
+  26: 'Pause: AMS verloren',
+  27: 'Pause: Hotend-Lüfter zu langsam',
+  28: 'Pause: Kammertemperatur gestört',
+  29: 'Kammer kühlen',
+  30: 'Pause durch G-Code',
+  31: 'Motorgeräusch-Vorführung',
+  32: 'Pause: Düse mit Filament bedeckt',
+  33: 'Pause: Schneidwerkfehler',
+  34: 'Pause: Fehler in der ersten Schicht',
+  35: 'Pause: Düse verstopft',
+  39: 'Düsenversatz kalibrieren',
+  40: 'Bett-Nivellierung (heiß)',
+  41: 'Schnellverschluss prüfen',
+  42: 'Tür und Abdeckung prüfen',
+  47: 'Bett-Nivellierung (Phase 1)',
+  48: 'Bett-Nivellierung (Phase 2)',
+  49: 'Kammer heizen',
+  50: 'Heizbett abkühlen',
+  51: 'Kalibrierlinien drucken',
+  52: 'Material prüfen',
+  54: 'Warten auf Heizbett-Temperatur',
+  55: 'Materialposition prüfen',
+  64: 'Hotend vorbereiten',
+  69: 'Düse kühlen',
+  76: 'Vorextrusion',
+  77: 'AMS vorbereiten',
+};
+
+/** Speed levels of the `print_speed` command. */
+export const SPEED_LEVELS = { 1: 'Leise', 2: 'Standard', 3: 'Sport', 4: 'Ludicrous' };

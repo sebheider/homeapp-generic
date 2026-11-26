@@ -11,7 +11,7 @@ import { StatePicker } from '../../components/Pickers';
 import { Toggle } from '../../components/ui';
 import { Card, DeleteButton, Field, NumInput, Switch, dimUnless, patchById, uid, type TabProps } from './shared';
 
-export const DEFAULT_VENTILATION: VentilationConfig = {
+const DEFAULT_VENTILATION: VentilationConfig = {
   enabled: false, outdoor: { temperature: '', humidity: '' }, rooms: [], humidityMax: 60, minDifference: 1,
   co2Max: 1000, co2Warn: 1400, cooling: false, coolAbove: 25, coolDifference: 3, closeHints: true, severity: 'info',
 };

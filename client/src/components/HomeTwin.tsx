@@ -11,38 +11,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useElementSize } from '../lib/hooks';
 import { clamp, num } from '../lib/format';
 import { useStore } from '../lib/store';
-import { FLOORS, floorOf, type RoomSummary } from '../lib/overview';
+import { floorOf, type RoomSummary } from '../lib/overview';
+import { W, D, RH, S, K, P, pts, rect, layout, random, spread, type V3, type Pt, type Callout } from './home-twin/geometry';
+import { NX, tempColor } from './home-twin/colors';
+import { Box, RoomTile, Slab, Roof } from './home-twin/parts';
 
-/** Footprint of a storey and room height (abstract units), pixels per unit, cos 30°. */
-const W = 12;
-const D = 9;
-const RH = 1.1;
-const S = 16;
-const K = Math.cos(Math.PI / 6);
-
-export const NX = { cyan: '#22e4ff', amber: '#ffb020', red: '#ff4d6d', orange: '#ff8a3d', green: '#2dffa8', violet: '#8b5cf6', magenta: '#ff3fd8', muted: '#7d90b5' };
-
-type V3 = [number, number, number];
-type Pt = [number, number];
-/** Isometric projection of a point (x to the lower right, y to the lower left, z up). */
-const P = ([x, y, z]: V3): Pt => [(x - y) * K * S, (x + y) * 0.5 * S - z * S];
-const pts = (a: V3[]) => a.map((p) => P(p).map((v) => v.toFixed(1)).join(',')).join(' ');
-const rect = (x0: number, y0: number, x1: number, y1: number, z: number): V3[] => [[x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]];
-
-/** Colour scale of room temperatures: cold blue … comfortable green … hot red. */
-const STOPS: [number, number[]][] = [[17, [59, 130, 246]], [19.5, [34, 228, 255]], [21, [45, 255, 168]], [22.4, [255, 176, 32]], [24, [255, 77, 109]]];
-export function tempColor(t: number | null) {
-  if (t == null) return NX.cyan;
-  if (t <= STOPS[0][0]) return `rgb(${STOPS[0][1]})`;
-  for (let k = 1; k < STOPS.length; k++) {
-    if (t > STOPS[k][0]) continue;
-    const [t0, c0] = STOPS[k - 1];
-    const [t1, c1] = STOPS[k];
-    const f = (t - t0) / (t1 - t0);
-    return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * f))})`;
-  }
-  return `rgb(${STOPS[STOPS.length - 1][1]})`;
-}
+export { NX, tempColor } from './home-twin/colors';
 
 /** Something outside the rooms that gets a callout (solar roof, heat pump, battery). */
 export interface TwinExtra {
@@ -51,67 +25,6 @@ export interface TwinExtra {
   sub?: string;
   color: string;
   onClick?: () => void;
-}
-
-interface Tile {
-  id: string;
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-  z: number;
-}
-
-interface Callout {
-  key: string;
-  anchor: Pt;
-  name: string;
-  value: string;
-  sub: string;
-  color: string;
-  prio: number;
-  onClick?: () => void;
-}
-
-/** Positions of storeys and rooms; only depends on the room list and their storeys. */
-function layout(rooms: RoomSummary[], gap: number) {
-  const floors = [...new Set(rooms.map((r) => floorOf(r.room)))].sort((a, b) => a - b);
-  const tiles: Tile[] = [];
-  floors.forEach((f, level) => {
-    const list = rooms.filter((r) => floorOf(r.room) === f);
-    const n = list.length;
-    // rows so that the rooms stay roughly square on the 12 × 9 footprint
-    const rows = Math.min(n, Math.max(1, Math.round(Math.sqrt((n * D) / W))));
-    let k = 0;
-    for (let row = 0; row < rows; row++) {
-      const count = Math.floor(n / rows) + (row < n % rows ? 1 : 0);
-      for (let c = 0; c < count; c++, k++) {
-        tiles.push({ id: list[k].room.id, x0: (c * W) / count, x1: ((c + 1) * W) / count, y0: (row * D) / rows, y1: ((row + 1) * D) / rows, z: level * gap });
-      }
-    }
-  });
-  const top = Math.max(0, floors.length - 1) * gap;
-  // the ground floor carries the heat pump and the battery (or the lowest storey without one)
-  const ground = Math.max(0, floors.indexOf(0)) * gap;
-  return { floors, gap, tiles, top, ground, roofBase: top + 4, ridge: top + 7 };
-}
-
-/** Deterministic pseudo random numbers (same particles on every render). */
-function random(seed: number) {
-  let s = seed;
-  return () => (s = (s * 16807) % 2147483647) / 2147483647;
-}
-
-/** Spreads the callouts of one side vertically so they keep `gap` apart inside [top, bottom]. */
-function spread(list: Callout[], top: number, bottom: number, gap: number) {
-  const sorted = [...list].sort((a, b) => a.anchor[1] - b.anchor[1]);
-  const ys = sorted.map((c) => Math.min(bottom, Math.max(top, c.anchor[1])));
-  for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + gap);
-  if (ys.length && ys[ys.length - 1] > bottom) {
-    ys[ys.length - 1] = bottom;
-    for (let i = ys.length - 2; i >= 0; i--) ys[i] = Math.min(ys[i], ys[i + 1] - gap);
-  }
-  return sorted.map((c, i) => ({ c, y: ys[i] }));
 }
 
 /** Text of a room callout: humidity / CO₂ and what is going on. */
@@ -126,129 +39,6 @@ function roomSub(s: RoomSummary) {
   if (on && parts.length < 2) parts.push(`${on} Licht${on > 1 ? 'er' : ''} an`);
   const text = parts.join(' · ');
   return text.length > 28 ? `${text.slice(0, 27)}…` : text;
-}
-
-/** A glass box (used for heat pump and battery). */
-function Box({ x0, y0, x1, y1, z0, z1, color, top = 0.22 }: { x0: number; y0: number; x1: number; y1: number; z0: number; z1: number; color: string; top?: number }) {
-  return (
-    <g>
-      <polygon points={pts([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]])} fill={color} fillOpacity={0.15} stroke={color} strokeWidth={1} />
-      <polygon points={pts([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]])} fill={color} fillOpacity={0.1} stroke={color} strokeWidth={1} />
-      <polygon points={pts(rect(x0, y0, x1, y1, z1))} fill={color} fillOpacity={top} stroke={color} strokeWidth={1.3} filter="url(#nxGlow)" />
-    </g>
-  );
-}
-
-/** Room name lying on the floor of its tile (like printed on a holo table); skipped if it does not fit. */
-function FloorText({ t, name }: { t: Tile; name: string }) {
-  const width = t.x1 - t.x0;
-  const label = name.toUpperCase();
-  // ~0.36 units per character at this size
-  const fit = (s: string) => s.length * 0.36 + 0.6 <= width && t.y1 - t.y0 >= 1.4;
-  const text = fit(label) ? label : fit(label.split(/\s+/)[0]) ? label.split(/\s+/)[0] : null;
-  if (!text) return null;
-  const [x, y] = P([(t.x0 + t.x1) / 2, (t.y0 + t.y1) / 2, t.z]);
-  return (
-    <text className="nx-floortext" transform={`matrix(${K} 0.5 ${-K} 0.5 ${x.toFixed(1)} ${y.toFixed(1)})`} textAnchor="middle" dominantBaseline="central">
-      {text}
-    </text>
-  );
-}
-
-/** One room: floor, glass walls, glowing outline and what happens inside. */
-function RoomTile({ t, s, alert, onClick }: { t: Tile; s: RoomSummary; alert?: string; onClick: () => void }) {
-  const { x0, y0, x1, y1, z } = t;
-  const z1 = z + RH;
-  const warn = alert ?? (s.open.length ? NX.amber : undefined);
-  const c = warn ?? tempColor(s.temp);
-  const mid: V3 = [(x0 + x1) / 2, (y0 + y1) / 2, z];
-  const [cx, cy] = P(mid);
-  const size = Math.min(x1 - x0 + y1 - y0, 12);
-  const lightsOn = s.lights.some(Boolean);
-  const [bx, by] = P([mid[0], mid[1], z1 + 0.7]);
-  const [px, py] = P([x0 + (x1 - x0) * 0.3, y0 + (y1 - y0) * 0.55, z]);
-  const [wx, wy] = P([mid[0], mid[1], z1 + 1.5]);
-  return (
-    <g className="nx-room" onClick={onClick} role="button" aria-label={s.room.name}>
-      <polygon points={pts(rect(x0, y0, x1, y1, z))} fill={c} fillOpacity={0.2} />
-      {s.heating && <ellipse cx={cx} cy={cy} rx={size * 3.6} ry={size * 1.8} fill="url(#nxHeat)" />}
-      {lightsOn && <ellipse cx={cx} cy={cy} rx={size * 4.8} ry={size * 2.5} fill="url(#nxWarm)" className="nx-lamp" />}
-      <FloorText t={t} name={s.room.name} />
-      <polygon points={pts([[x0, y0, z], [x1, y0, z], [x1, y0, z1], [x0, y0, z1]])} fill={c} fillOpacity={0.05} stroke={c} strokeOpacity={0.3} strokeWidth={0.8} />
-      <polygon points={pts([[x0, y0, z], [x0, y1, z], [x0, y1, z1], [x0, y0, z1]])} fill={c} fillOpacity={0.05} stroke={c} strokeOpacity={0.3} strokeWidth={0.8} />
-      <polygon points={pts([[x0, y1, z], [x1, y1, z], [x1, y1, z1], [x0, y1, z1]])} fill={c} fillOpacity={0.16} stroke={c} strokeOpacity={0.75} strokeWidth={1} />
-      <polygon points={pts([[x1, y0, z], [x1, y1, z], [x1, y1, z1], [x1, y0, z1]])} fill={c} fillOpacity={0.1} stroke={c} strokeOpacity={0.75} strokeWidth={1} />
-      <polygon className="nx-top" points={pts(rect(x0, y0, x1, y1, z1))} fill="none" stroke={c} strokeWidth={1.5} filter="url(#nxGlow)" />
-      {lightsOn && <circle cx={bx} cy={by} r={3} fill="#fff3c4" filter="url(#nxGlow2)" />}
-      {s.presence && (
-        <g>
-          <ellipse className="nx-ping" cx={px} cy={py} rx={9} ry={4.5} fill="none" stroke="#7cefff" />
-          <ellipse cx={px} cy={py} rx={9} ry={4.5} fill="none" stroke="#7cefff" strokeOpacity={0.7} />
-          <line x1={px} y1={py} x2={px} y2={py - 14} stroke="#bff8ff" strokeWidth={2.4} strokeLinecap="round" />
-          <circle cx={px} cy={py - 18} r={3} fill="#bff8ff" />
-        </g>
-      )}
-      {warn && (
-        <g className="nx-warn" filter="url(#nxGlow2)">
-          <path d={`M${wx} ${wy - 9} L${wx + 9} ${wy + 7} L${wx - 9} ${wy + 7} Z`} fill={warn} fillOpacity={0.25} stroke={warn} strokeWidth={1.6} strokeLinejoin="round" />
-          <line x1={wx} y1={wy - 3} x2={wx} y2={wy + 2} stroke="#fff3c4" strokeWidth={1.8} strokeLinecap="round" />
-          <circle cx={wx} cy={wy + 4.6} r={1} fill="#fff3c4" />
-        </g>
-      )}
-    </g>
-  );
-}
-
-/** Slab of a storey with a little thickness and dimension ticks, plus its short name (EG, OG …). */
-function Slab({ z, floor }: { z: number; floor: number }) {
-  const d = 0.35;
-  const C = NX.cyan;
-  const [tx, ty] = P([-0.9, 1.2, z]);
-  return (
-    <g>
-      <polygon points={pts([[0, D, z - d], [W, D, z - d], [W, D, z], [0, D, z]])} fill={C} fillOpacity={0.1} stroke={C} strokeOpacity={0.35} />
-      <polygon points={pts([[W, 0, z - d], [W, D, z - d], [W, D, z], [W, 0, z]])} fill={C} fillOpacity={0.07} stroke={C} strokeOpacity={0.35} />
-      <polygon points={pts(rect(0, 0, W, D, z))} fill={C} fillOpacity={0.05} stroke={C} strokeOpacity={0.75} strokeWidth={1.4} filter="url(#nxGlow)" />
-      {Array.from({ length: W + 1 }, (_, k) => {
-        const [a, b] = P([k, D, z - d]);
-        const [c2, e] = P([k, D + 0.45, z - d]);
-        return <line key={k} x1={a} y1={b} x2={c2} y2={e} stroke={C} strokeOpacity={0.5} />;
-      })}
-      <text className="nx-tag" x={tx} y={ty} textAnchor="end">{FLOORS.find((f) => f.value === floor)?.short ?? ''}</text>
-    </g>
-  );
-}
-
-/** Floating gable roof with rafters and – if there is a PV system – solar panels on the front side. */
-function Roof({ base, ridge, solar }: { base: number; ridge: number; solar: boolean }) {
-  const a = -0.4;
-  const b = W + 0.4;
-  const c = -0.4;
-  const d = D + 0.4;
-  const m = D / 2;
-  const C = NX.cyan;
-  const onSlope = (u: number, v: number): V3 => [u, m + v * (d - m), ridge - v * (ridge - base)];
-  return (
-    <g>
-      <polygon points={pts([[a, c, base], [b, c, base], [b, m, ridge], [a, m, ridge]])} fill={C} fillOpacity={0.04} stroke={C} strokeOpacity={0.35} />
-      <polygon points={pts([[a, c, base], [a, d, base], [a, m, ridge]])} fill={C} fillOpacity={0.03} stroke={C} strokeOpacity={0.3} />
-      <polygon points={pts([[a, m, ridge], [b, m, ridge], [b, d, base], [a, d, base]])} fill={C} fillOpacity={0.07} stroke={C} strokeOpacity={0.8} strokeWidth={1.3} filter="url(#nxGlow)" />
-      <polygon points={pts([[b, c, base], [b, d, base], [b, m, ridge]])} fill={C} fillOpacity={0.12} stroke={C} strokeOpacity={0.85} strokeWidth={1.3} filter="url(#nxGlow)" />
-      {Array.from({ length: 9 }, (_, k) => {
-        const [x1, y1] = P([k * 1.5, m, ridge]);
-        const [x2, y2] = P([k * 1.5, d, base]);
-        return <line key={k} x1={x1} y1={y1} x2={x2} y2={y2} stroke={C} strokeOpacity={0.18} />;
-      })}
-      {solar &&
-        [0, 1].flatMap((row) =>
-          Array.from({ length: 6 }, (_, col) => {
-            const u0 = 0.9 + col * 1.72;
-            const v0 = 0.14 + row * 0.36;
-            return <polygon key={`${row}-${col}`} points={pts([onSlope(u0, v0), onSlope(u0 + 1.56, v0), onSlope(u0 + 1.56, v0 + 0.32), onSlope(u0, v0 + 0.32)])} fill={NX.amber} fillOpacity={0.3} stroke={NX.amber} strokeWidth={1} />;
-          }),
-        )}
-    </g>
-  );
 }
 
 export interface TwinProps {

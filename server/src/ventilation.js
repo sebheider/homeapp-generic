@@ -23,7 +23,7 @@
  * Recommendations are published as hints in the shape of the user-defined alerts.
  */
 import { EventEmitter } from 'node:events';
-import { round } from './util.js';
+import { round } from './util/number.js';
 import { KIOSK_PREFIX, isKioskId } from './kiosk.js';
 
 export const VENT_SEVERITIES = ['warning', 'info'];

@@ -1,6 +1,6 @@
 /**
  * Zoom factor for content that should grow with its box (widgets of the own start page that were
- * made larger than their content). Pure function, the DOM measuring is done by `ScaleUp` (Hud.tsx).
+ * made larger than their content). Pure function, the DOM measuring is done by `ScaleUp` (components/hud/scale.tsx).
  *
  * The content is laid out at the width `width / s` and then enlarged by `s`, so it always fills the
  * width. The largest `s` is chosen whose enlarged height still fits `height`, without making the

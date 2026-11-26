@@ -1,0 +1,81 @@
+/* Kiosk mode and the one-screen overview: compact panels, container-query gauges and fullscreen fixes. */
+/* kiosk mode: mouse pointer hidden while idle, compact panels so the overview fits one screen */
+.hide-cursor, .hide-cursor * { cursor: none !important; }
+.kiosk-dash .hud { padding: .75rem .9rem; }
+.kiosk-dash .hud-head { margin-bottom: .45rem; }
+.kiosk-dash .hud::after { inset: 7px; }
+/* gauge faces and camera pictures follow the real height of their panel (container query units) */
+.kiosk-dash .hud-title { font-size: .7rem; letter-spacing: .12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.kiosk-gauges > .hud, .kiosk-security, .cdash-gauge > .hud { container-type: size; }
+/* height of title and caption inside the panel's content box, i.e. what the face cannot use */
+.kiosk-gauges > .hud { --gauge-chrome: 1.7rem; }
+.cdash-gauge > .hud { --gauge-chrome: 2.6rem; }
+:is(.kiosk-gauges, .cdash-gauge) .hud-gauge-face { max-width: min(100%, calc(100cqh - var(--gauge-chrome))); }
+/* value and unit follow the size of the face, so they stay inside the ring on small panels */
+:is(.kiosk-gauges, .cdash-gauge) .hud-gauge-value { font-size: clamp(.8rem, calc(min(100cqw, 100cqh - var(--gauge-chrome)) * .22), 1.6rem); }
+:is(.kiosk-gauges, .cdash-gauge) .hud-gauge-value > span:last-child { font-size: .55em; }
+:is(.kiosk-gauges, .cdash-gauge) .hud-gauge { position: relative; }
+/* the caption overlays the lower part of the face (the open bottom of the arc) so the ring can use the full height */
+:is(.kiosk-gauges, .cdash-gauge) .hud-gauge-label { position: absolute; left: 0; right: 0; bottom: 2%; min-height: 0; margin-top: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px var(--bg2), 0 0 3px var(--bg2); }
+/* kiosk overview: number and caption keep growing with large rings (few gauges, high rows) */
+.kiosk-gauges .hud-gauge-value { font-size: clamp(.8rem, calc(min(100cqw, 100cqh - var(--gauge-chrome)) * .22), 3.2rem); }
+.kiosk-gauges .hud-gauge-label { font-size: clamp(.72rem, calc(min(100cqw, 100cqh - var(--gauge-chrome)) * .08), 1.05rem); }
+/* narrow panels: the icon before the title takes the place of the dot, so the title keeps its room */
+.kiosk-gauges .hud-head:has(.hud-title svg) .hud-dot { display: none; }
+/* wide panels (e.g. three per row on a 1200×1920 portrait screen): title and caption on the left, the ring on
+   the right over the full height (at most so wide that 7rem are left for the text) instead of below the title;
+   the unit goes below the number, which can then use the width of the ring */
+@container (aspect-ratio >= 1.5) and (min-width: 12rem) {
+  .kiosk-gauges > .hud > * { --face: min(100cqh, 100cqw - 7rem); }
+  /* same offsets as the padding of .kiosk-dash .hud; the title may use the empty top left corner of the ring's square */
+  .kiosk-gauges .hud-head { position: absolute; top: .75rem; left: .9rem; right: calc(.9rem + var(--face) * .7); margin: 0; }
+  .kiosk-gauges .hud-gauge { align-self: stretch; width: 100%; flex-direction: row-reverse; align-items: flex-end; gap: .75rem; }
+  .kiosk-gauges .hud-gauge-face { flex: none; width: var(--face); max-width: none; align-self: center; }
+  .kiosk-gauges .hud-gauge-value { display: flex; flex-direction: column; align-items: center; font-size: clamp(.8rem, calc(var(--face) * .26), 3.2rem); }
+  .kiosk-gauges .hud-gauge-value > span:last-child { margin: .15em 0 0; font-size: .5em; }
+  .kiosk-gauges .hud-gauge-label {
+    position: static; flex: 1; min-width: 0; text-align: left; font-size: .9rem; line-height: 1.25; text-shadow: none;
+    white-space: normal; text-wrap: balance; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  }
+  /* the highlighted part of a caption (e.g. the power draw of the heat pump) gets a line of its own */
+  .kiosk-gauges .hud-gauge-label .gauge-sep { display: none; }
+  .kiosk-gauges .hud-gauge-label .gauge-em { display: flex; }
+  .kiosk-gauges .hud-head:has(.hud-title svg) .hud-dot { display: block; }
+}
+/* flat wide panels (many strips above, alarm banners): the caption gets fewer lines and keeps the highlighted
+   part inline, so it never runs into the title above it */
+@container (aspect-ratio >= 1.5) and (min-width: 12rem) and (max-height: 5rem) {
+  .kiosk-gauges .hud-gauge-label { -webkit-line-clamp: 2; }
+  .kiosk-gauges .hud-gauge-label .gauge-sep { display: inline; }
+  .kiosk-gauges .hud-gauge-label .gauge-em { display: inline-flex; }
+}
+@container (aspect-ratio >= 1.5) and (min-width: 12rem) and (max-height: 3.6rem) {
+  .kiosk-gauges .hud-gauge-label { -webkit-line-clamp: 1; font-size: .8rem; }
+}
+/* two rows of 16:9 pictures plus timeline and header: width derived from the height that is left */
+/* (open doors / windows below the timeline take another row) */
+.kiosk-cams { width: min(100%, calc((100cqh - var(--cams-reserve, 7rem)) * 16 / 9)); margin-inline: auto; }
+.kiosk-security.has-contacts { --cams-reserve: 9.5rem; }
+/* short security panels: the cameras take precedence over the activity timeline */
+@container (max-height: 17rem) {
+  .kiosk-security .hud-activity { display: none; }
+  .kiosk-security .kiosk-cams { --cams-reserve: 2.5rem; }
+  .kiosk-security.has-contacts .kiosk-cams { --cams-reserve: 5rem; }
+}
+/* the portrait overview fills the screen, but scrolls rather than squeezing panels below their minimum;
+   the negative margin moves the clipping edge out to the page edge, so the glow of the panels stays whole */
+.kiosk-scroll { height: calc(100% + 1.5rem); margin: -.75rem; padding: .75rem; overflow-y: auto; scrollbar-width: none; }
+.kiosk-scroll::-webkit-scrollbar { display: none; }
+.kiosk-dash.kiosk-reduce-effects .hud, .kiosk-dash.kiosk-reduce-effects .glass {
+  backdrop-filter: none;
+}
+/* Chrome can flicker while compositing backdrop-filter surfaces in fullscreen. */
+:fullscreen .standard-dash .hud, :fullscreen .standard-dash .glass,
+:fullscreen .kiosk-dash .hud, :fullscreen .kiosk-dash .glass {
+  backdrop-filter: none;
+}
+/*
+ * The edge light moves via a transform on its own masked layer. Static dashboard background blobs
+ * (`.backdrop-still`) avoid unnecessary GPU work.
+ */
+.backdrop-still i { animation: none; will-change: auto; }

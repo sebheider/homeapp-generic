@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/sebheider/homeapp-generic/blob/main/docs/module.schema.json",
   "title": "HomeApp – Manifest eines externen Moduls (module.json)",
-  "description": "Schema-Version 1. Beschreibung: docs/MODULES.md. Der Server prüft beim Installieren dieselben Regeln (server/src/extensions.js) und meldet das fehlerhafte Feld.",
+  "description": "Schema-Version 1. Beschreibung: docs/MODULES.md. Der Server prüft beim Installieren dieselben Regeln (server/src/extensions/manifest.js) und meldet das fehlerhafte Feld.",
   "type": "object",
   "required": ["manifestVersion", "id", "name", "version"],
   "anyOf": [{ "required": ["page"] }, { "required": ["widget"] }],

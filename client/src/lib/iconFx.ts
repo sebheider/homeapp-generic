@@ -1,7 +1,7 @@
 /**
  * Icon effects of the device cards: which animation an icon gets while its device runs and how strongly
- * the glow ("halo") behind the icon shines. The animations themselves are CSS classes in index.css
- * (`anim-*`, `.icon-bubble.halo`) and follow the effects level of the device (`html[data-effects]`).
+ * the glow ("halo") behind the icon shines. The animations themselves are CSS classes in styles/animations.css
+ * (`anim-*`) and styles/surfaces.css (`.icon-bubble.halo`) and follow the effects level of the device (`html[data-effects]`).
  */
 
 /** Animation classes of running devices by icon name; icons without an entry only glow. */

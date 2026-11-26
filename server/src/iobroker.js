@@ -22,7 +22,8 @@ import https from 'node:https';
 import WebSocket from 'ws';
 import { io as socketIo } from 'socket.io-client';
 import { analyseWrite, userIdOf } from './permissions.js';
-import { searchObjects } from './util.js';
+import { searchObjects } from './util/states.js';
+import { addTimeout, clearTimeouts } from './util/timers.js';
 
 const require = createRequire(import.meta.url);
 require('@iobroker/ws'); // registers globalThis.io.connect (plain websocket protocol of ioBroker admin / ws adapter)
@@ -100,11 +101,7 @@ export class IoBrokerSource extends EventEmitter {
 
   /** setTimeout that is cancelled automatically by {@link stop}. */
   later(fn, ms) {
-    const t = setTimeout(() => {
-      this.timers.delete(t);
-      fn();
-    }, ms);
-    this.timers.add(t);
+    addTimeout(this.timers, fn, ms);
   }
 
   /** Connects with the given configuration (`host`, `port`, `secure`, `protocol`, `user`, `password`, `verifySsl`). */
@@ -122,8 +119,7 @@ export class IoBrokerSource extends EventEmitter {
   /** Disconnects, cancels all timers and forgets the states (objects are kept for the search). */
   stop() {
     this.generation++;
-    this.timers.forEach(clearTimeout);
-    this.timers.clear();
+    clearTimeouts(this.timers);
     this.closeClient();
     this.connected = false;
     this.permissionDenied = false;

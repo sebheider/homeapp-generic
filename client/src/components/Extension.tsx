@@ -22,13 +22,13 @@ import { Empty, PageHeader, Slider, Toggle } from './ui';
 export const extensionIcon = (name: string) => ICONS[name] ?? Puzzle;
 
 /** Opens Einstellungen → Module (the settings page reads `?tab=` once when it opens). */
-export function openModuleSettings() {
+function openModuleSettings() {
   history.replaceState(null, '', `${location.pathname}?tab=modules${location.hash}`);
   useStore.getState().setView('settings');
 }
 
 /** Manifest and stored state of an installed module (null if it is not installed). */
-export function useExtension(id: string) {
+function useExtension(id: string) {
   const manifest = useStore((s) => s.extensions.find((m) => m.id === id) ?? null);
   const all = useStore((s) => s.config?.extensions);
   const cfg = useMemo(() => (manifest ? extensionConfig(manifest, all) : null), [manifest, all]);

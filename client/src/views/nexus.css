@@ -5,12 +5,11 @@
  *   < 720 px  one column (twin first)   720–1099 px  twin on top, two panel columns
  *   ≥ 1100 px cockpit: panels left / right turned slightly towards the twin, energy + scenes below
  * `.nx-fill` (kiosk): the cockpit fills exactly the available height; `.nx-tall` is the kiosk layout in
- * portrait format (framed twin with its callouts as cards on the right, see NexusDashboard.tsx).
- * Animations are slow and subtle; "Bewegung reduzieren" switches them off (see index.css).
+ * portrait format (framed twin with its callouts as cards on the right, see nexus/NexusTall.tsx).
+ * Animations are slow and subtle; "Bewegung reduzieren" switches them off (see styles/effects.css).
  */
 .nx {
-  --nx-cyan: #22e4ff; --nx-violet: #8b5cf6; --nx-magenta: #ff3fd8; --nx-amber: #ffb020;
-  --nx-orange: #ff8a3d; --nx-green: #2dffa8; --nx-red: #ff4d6d; --nx-fg: #e9f6ff; --nx-muted: #8193b9;
+  --nx-cyan: #22e4ff; --nx-amber: #ffb020; --nx-red: #ff4d6d; --nx-fg: #e9f6ff; --nx-muted: #8193b9;
   container: nx / inline-size;
   color: var(--nx-fg);
   font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
@@ -38,7 +37,7 @@
 }
 .nx-fill { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 .nx-fill::-webkit-scrollbar { display: none; }
-/* kiosk on a big screen (index.css `[data-ui-scale]`): the cockpit is sized in px, so it is zoomed as a
+/* kiosk on a big screen (styles/surfaces.css `[data-ui-scale]`): the cockpit is sized in px, so it is zoomed as a
    whole; its few rem sizes are divided by the factor, as the root font already grew by it */
 html[data-ui-scale] .nx-fill { zoom: var(--ui-scale); }
 html[data-ui-scale] .nx-fill :is(svg.lucide, svg.wx-icon) { zoom: 1; }
@@ -216,7 +215,7 @@ button.nx-tip:hover { background: linear-gradient(90deg, color-mix(in srgb, var(
 @keyframes nx-rise { 0% { transform: translateY(0); opacity: 0; } 20%, 80% { opacity: var(--o); } 100% { transform: translateY(-70px); opacity: 0; } }
 @keyframes nx-orbit { to { stroke-dashoffset: -100; } }
 @keyframes nx-ring { to { stroke-dashoffset: -80; } }
-/* animation details (see index.css): no orbiting rings or rising particles from "medium" on */
+/* animation details (see styles/effects.css): no orbiting rings or rising particles from "medium" on */
 :is([data-effects='medium'], [data-effects='low']) :is(.nx-orbit, .nx-ring, .nx-particle) { animation: none; }
 [data-effects='low'] .nx-glow { filter: none; }
 [data-effects='low'] .nx-ping { display: none; }

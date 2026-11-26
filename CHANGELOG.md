@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.7.2] – 2026-11-26
+
+Für die Veröffentlichung aufgeräumt: Code neu gegliedert, nur noch erfundene Beispieldaten.
+
+### Geändert
+- **Server und App sind neu gegliedert:** Große Dateien (u. a. Bambu Lab, Spotify, OctoPrint, externe Module, Konfiguration, Kiosk, Müllabfuhr, Geräteerkennung, Serverstart; Übersicht, Nexus, eigene Startseite, Wetter, Navigation, Gerätekarten, Kameras, HUD, Typen, Store und Styles) sind in Ordner mit kleinen, klar abgegrenzten Modulen aufgeteilt. Ungenutzter Code ist entfernt, doppelte Hilfsfunktionen sind zusammengefasst. Funktion und Aussehen bleiben unverändert.
+- Tests und Dokumentation verwenden nur noch erfundene Beispieldaten (Abfuhrkalender, Adressen, Namen, Geräte).
+
+### Behoben
+- Das Speichern der Einstellungen schlägt unter Windows nicht mehr gelegentlich mit „EPERM“ fehl, wenn die Datei kurz von einem anderen Programm (z. B. einem Virenscanner) gesperrt ist.
+
 ## [2.7.1] – 2026-11-26
 
 Kioskmodus: Eiskristalle der Temperatur werden nicht mehr abgeschnitten.

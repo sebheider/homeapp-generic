@@ -8,8 +8,8 @@ import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState, type RefO
 import { AnimatePresence, animate, motion, useIsPresent, useMotionValue } from 'motion/react';
 import { LayoutDashboard, WifiOff, X, CircleAlert, CircleCheck, Info } from 'lucide-react';
 import { useStore, viewFromHash, type Toast, type View } from './lib/store';
-import { useNow } from './lib/hooks';
-import { useKioskLayout, useKioskScale, useMedia, useNavShell } from './lib/display';
+import { useNow, useMedia } from './lib/hooks';
+import { useKioskLayout, useKioskScale, useNavShell } from './lib/displayHooks';
 import { useSwipe } from './lib/swipe';
 import { adjacentPage, navigationDirection } from './lib/navigation';
 import { CameraPopupPauseBanner, CameraViewer, MotionPopup } from './components/Cameras';
@@ -271,11 +271,11 @@ export default function App() {
     document.documentElement.dataset.theme = shownTheme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nexusHome ? '#03050e' : shownTheme === 'dark' ? '#0a0e1c' : '#eef1f9');
   }, [shownTheme, nexusHome]);
-  // animation details of this device (see index.css `[data-effects]`)
+  // animation details of this device (see styles/effects.css `[data-effects]`)
   useLayoutEffect(() => {
     document.documentElement.dataset.effects = effects;
   }, [effects]);
-  // kiosk on a big screen (e.g. 1920×1200 or 1200×1920): everything larger, see index.css `[data-ui-scale]`
+  // kiosk on a big screen (e.g. 1920×1200 or 1200×1920): everything larger, see styles/surfaces.css `[data-ui-scale]`
   useLayoutEffect(() => {
     const html = document.documentElement;
     if (kioskScale > 1) {

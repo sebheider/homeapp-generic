@@ -1,7 +1,7 @@
 /**
  * Animated weather symbol (SVG): rotating sun rays, drifting clouds, falling rain / snow, flashing lightning.
  * With the WMO code and the wind speed it also shows showers (sun or moon behind the cloud), heavy rain,
- * icy drops, hail and gusts. The animations are plain CSS (see `wx-*` in index.css) so they cost almost nothing.
+ * icy drops, hail and gusts. The animations are plain CSS (see `wx-*` in styles/weather-effects.css) so they cost almost nothing.
  */
 import { useEffect, useId, useState } from 'react';
 import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Moon, Sun } from 'lucide-react';

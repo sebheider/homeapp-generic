@@ -9,7 +9,7 @@
  */
 
 export const GRID_COLS = 12;
-export const MAX_ROWS = 200;
+const MAX_ROWS = 200;
 export const MAX_HEIGHT = 24;
 export const MAX_WIDGETS = 60;
 
@@ -41,7 +41,7 @@ export interface CustomDashboard {
 }
 
 /** Gauges a "Messinstrument" widget can show. */
-export const GAUGE_KINDS = [
+const GAUGE_KINDS = [
   { id: 'solar', label: 'Solar' },
   { id: 'battery', label: 'Batterie' },
   { id: 'autarky', label: 'Autarkie' },
@@ -58,7 +58,7 @@ export interface WidgetPart {
 }
 
 /** Parts of the weather page for the "Wetter-Detail" widget. */
-export const WEATHER_PARTS: readonly WidgetPart[] = [
+const WEATHER_PARTS: readonly WidgetPart[] = [
   { id: 'now', label: 'Aktuelle Werte', size: [6, 4] },
   { id: 'hourly', label: 'Stundenprognose', size: [6, 3] },
   { id: 'temperature', label: 'Temperaturverlauf', size: [6, 4] },
@@ -70,7 +70,7 @@ export const WEATHER_PARTS: readonly WidgetPart[] = [
 ];
 
 /** Parts of the energy page for the "Energie-Detail" widget. */
-export const ENERGY_PARTS: readonly WidgetPart[] = [
+const ENERGY_PARTS: readonly WidgetPart[] = [
   { id: 'production', label: 'Erzeugung', size: [2, 3] },
   { id: 'consumption', label: 'Verbrauch', size: [2, 3] },
   { id: 'grid', label: 'Netz', size: [2, 3] },
@@ -203,7 +203,7 @@ export function findFreeSpot(widgets: GridRect[], w: number, h: number): { x: nu
 }
 
 /** Id that is not used by another widget yet. */
-export function widgetId(type: string, widgets: { id: string }[]) {
+function widgetId(type: string, widgets: { id: string }[]) {
   const taken = new Set(widgets.map((w) => w.id));
   let i = 1;
   while (taken.has(`${type}-${i}`)) i++;

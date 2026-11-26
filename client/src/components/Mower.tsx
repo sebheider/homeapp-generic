@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { House, LoaderCircle, Pause, Play, StepForward, type LucideIcon } from 'lucide-react';
 import { api } from '../lib/api';
 import { useStateEntries, useStore } from '../lib/store';
-import { useDevices } from '../lib/selectors';
+import { EMPTY_DEVICES, useDevices } from '../lib/selectors';
 import { clamp, toNum } from '../lib/format';
 import {
   MOWER_COMMANDS, appendTail, gridStep, headingDeg, isDocked, isDriving, mapBounds, mapRotation, mowerActivity, mowerStatus, parseFrame, parsePoint,
@@ -18,7 +18,7 @@ import type { Device } from '../lib/types';
 import { toneStyle } from './Hud';
 import { useStaticVisuals } from './ui';
 
-/** Colours of the map: mowed lanes, start point and charging station (the lines follow the theme, see index.css). */
+/** Colours of the map: mowed lanes, start point and charging station (the lines follow the theme, see styles/pages.css). */
 export const MAP_COLORS = { swath: '#34d399', start: '#38bdf8', station: '#facc15' };
 
 /** Finite number of a datapoint value, otherwise null. */
@@ -33,8 +33,6 @@ export const msOrNull = (v: unknown) => {
   return n === null || n <= 0 ? null : n < 1e12 ? n * 1000 : n;
 };
 
-const NO_MOWERS: Device[] = [];
-
 /**
  * The first configured mower that is mowing right now (null otherwise) – the standard overview shows it in
  * place of the energy flow. Only the state datapoints are watched, so other values do not re-render.
@@ -43,7 +41,7 @@ export function useActiveMower(): Device | null {
   const devices = useDevices();
   const mowers = useMemo(() => {
     const list = devices.filter((d) => d.type === 'mower' && d.states.state);
-    return list.length ? list : NO_MOWERS;
+    return list.length ? list : EMPTY_DEVICES;
   }, [devices]);
   const ids = useMemo(() => mowers.map((m) => m.states.state), [mowers]);
   const states = useStateEntries(ids);
@@ -61,7 +59,7 @@ export function MowerStateChip({ value, className = '' }: { value: unknown; clas
   );
 }
 
-export const COMMAND_ICONS: Record<MowerCommand, LucideIcon> = { start: Play, pause: Pause, resume: StepForward, home: House };
+const COMMAND_ICONS: Record<MowerCommand, LucideIcon> = { start: Play, pause: Pause, resume: StepForward, home: House };
 
 /**
  * Writes a button (or value) of the mower and reports the result as toast; `busy` is the key whose

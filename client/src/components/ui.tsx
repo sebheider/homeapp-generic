@@ -8,7 +8,7 @@ import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { LoaderCircle, Settings, X } from 'lucide-react';
 import { clamp } from '../lib/format';
 import { useStore } from '../lib/store';
-import { useMedia } from '../lib/display';
+import { useMedia } from '../lib/hooks';
 
 export const StaticVisualsContext = createContext(false);
 export const useStaticVisuals = () => useContext(StaticVisualsContext);

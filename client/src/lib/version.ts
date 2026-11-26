@@ -5,7 +5,7 @@
 import changelog from '../../../CHANGELOG.md?raw';
 
 /** Full release notes (Markdown). */
-export const CHANGELOG = changelog;
+const CHANGELOG = changelog;
 
 /** Version of this build, e.g. "1.5.0". */
 export const VERSION = /^## \[(\d+\.\d+\.\d+[^\]]*)\]/m.exec(changelog)?.[1] ?? 'dev';

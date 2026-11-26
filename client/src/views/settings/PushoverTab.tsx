@@ -11,7 +11,7 @@ import { Toggle } from '../../components/ui';
 import { Card, Field, Switch, dimUnless, type TabProps } from './shared';
 
 const ev = (enabled: boolean, priority: PushPriority) => ({ enabled, priority });
-export const DEFAULT_PUSHOVER: PushoverConfig = {
+const DEFAULT_PUSHOVER: PushoverConfig = {
   enabled: false,
   device: '',
   sound: '',

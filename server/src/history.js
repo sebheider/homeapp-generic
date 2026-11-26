@@ -9,7 +9,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from './config.js';
-import { round } from './util.js';
+import { writeFileAtomic } from './util/fs.js';
+import { round } from './util/number.js';
 
 const FILE = path.join(DATA_DIR, 'history.json');
 const KEEP_MS = 48 * 3600 * 1000; // retention
@@ -83,8 +84,7 @@ export class History {
   flush() {
     if (!this.dirty) return;
     try {
-      fs.writeFileSync(FILE + '.tmp', JSON.stringify(this.data));
-      fs.renameSync(FILE + '.tmp', FILE);
+      writeFileAtomic(FILE, JSON.stringify(this.data));
       this.dirty = false;
     } catch (err) {
       console.error('History konnte nicht gespeichert werden:', err.message);

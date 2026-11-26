@@ -10,8 +10,7 @@ import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { BellOff, Clock3, Flag, Printer3d, Thermometer, Timer, X } from 'lucide-react';
 import { PRINTER_SNAPSHOT_URL, PRINTER_STREAM_URL } from '../lib/api';
 import { useStore } from '../lib/store';
-import { useNow } from '../lib/hooks';
-import { useMedia } from '../lib/display';
+import { useNow, useMedia } from '../lib/hooks';
 import { num } from '../lib/format';
 import { POPUP_TITLE, bambuJobLine, duration, fileLabel, finishTime, percent, printerStatus, webcamTransform } from '../lib/printer';
 import type { PopupPosition, PopupSize, PrinterData, PrinterPopupEvent, PrinterPopupReason, PrinterTemp } from '../lib/types';
@@ -102,7 +101,7 @@ export function PrintFacts({ p, className = '' }: { p: PrinterData; className?: 
 }
 
 /** Actual and target temperatures ("Düse 215° / 215°"); a target of 0 means the heater is off. */
-export function PrinterTemps({ temps, className = '' }: { temps: PrinterTemp[]; className?: string }) {
+function PrinterTemps({ temps, className = '' }: { temps: PrinterTemp[]; className?: string }) {
   if (!temps.length) return null;
   return (
     <div className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${className}`}>

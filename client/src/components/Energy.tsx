@@ -8,6 +8,7 @@ import { BatteryCharging, Car, House, PlugZap, Sun } from 'lucide-react';
 import { useStateValues, useStore } from '../lib/store';
 import { flowDuration } from '../lib/perf';
 import { clamp, num, power, toNum } from '../lib/format';
+import { NO_STATES } from '../lib/selectors';
 import { useStaticVisuals } from './ui';
 import { useHistory, type ChartSeries } from './Charts';
 
@@ -63,7 +64,6 @@ export function useEnergy(): EnergyValues {
 
 /** Energy datapoints that have a history chart. */
 const HISTORY_KEYS = ['production', 'consumption', 'grid', 'battery', 'batterySoc'];
-const NO_STATES: Record<string, string> = {};
 
 /**
  * History curves of the energy system for the last `hours`, with the same sign conventions as the
@@ -104,7 +104,7 @@ interface NodeProps {
 /**
  * A node of the flow diagram: the circle is centred on (x, y) in percent of the diagram box, the caption
  * hangs below (or beside) it. Circle and texts are sized relative to the box width (see `.flow-node` in
- * index.css), so the layout looks the same at every size.
+ * styles/flow.css), so the layout looks the same at every size.
  */
 function Node({ x, y, icon, label, watts, color, active, sub, big, caption = 'below' }: NodeProps) {
   const staticVisuals = useStaticVisuals();

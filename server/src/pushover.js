@@ -18,6 +18,7 @@
  * Nothing is sent in demo mode (the simulation produces events all the time); the test message works.
  */
 import { toMinutes } from './popup-rules.js';
+import { trimText } from './util/text.js';
 
 export const PUSHOVER_API = 'https://api.pushover.net/1/messages.json';
 /** Pushover priorities: -2 no notification, -1 silent, 0 normal, 1 high (bypasses quiet hours of the phone), 2 emergency (repeated until confirmed). */
@@ -50,7 +51,6 @@ const IMAGE_TYPES = /^image\/(jpeg|png|gif|webp)$/;
 /** Interval of the printer status updates in minutes: default and range. */
 export const PRINTER_PROGRESS_MINUTES = { default: 30, min: 5, max: 720 };
 
-const text = (v, max) => String(v ?? '').trim().slice(0, max);
 const priority = (v, fallback) => (PRIORITIES.includes(Number(v)) && v !== null && v !== '' ? Number(v) : fallback);
 const minutes = (v) => {
   const n = Math.round(Number(v));
@@ -64,11 +64,11 @@ export function sanitizePushover(p = {}) {
   const events = v.events && typeof v.events === 'object' ? v.events : {};
   return {
     enabled: v.enabled === true,
-    user: text(v.user, 50),
-    token: text(v.token, 50),
-    device: text(v.device, 100),
-    sound: text(v.sound, 30),
-    appUrl: /^https?:\/\//i.test(text(v.appUrl, 300)) ? text(v.appUrl, 300).replace(/\/+$/, '') : '',
+    user: trimText(v.user, 50),
+    token: trimText(v.token, 50),
+    device: trimText(v.device, 100),
+    sound: trimText(v.sound, 30),
+    appUrl: /^https?:\/\//i.test(trimText(v.appUrl, 300)) ? trimText(v.appUrl, 300).replace(/\/+$/, '') : '',
     quietFrom: time(v.quietFrom),
     quietUntil: time(v.quietUntil),
     attachImage: v.attachImage !== false,
@@ -210,8 +210,8 @@ export class PushoverService {
     const form = new FormData();
     form.set('token', cfg.token);
     form.set('user', cfg.user);
-    form.set('title', text(title, 250) || 'HomeApp');
-    form.set('message', text(message, 1024) || '–');
+    form.set('title', trimText(title, 250) || 'HomeApp');
+    form.set('message', trimText(message, 1024) || '–');
     form.set('priority', String(prio));
     if (prio === 2) {
       form.set('retry', String(EMERGENCY.retry));

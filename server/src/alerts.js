@@ -28,7 +28,9 @@
  */
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
-import { isOn } from './util.js';
+import { writeFileAtomic } from './util/fs.js';
+import { isOn } from './util/states.js';
+import { trimText } from './util/text.js';
 
 export const ALERT_OPS = ['>', '>=', '<', '<=', '==', '!=', 'on', 'off'];
 export const SEVERITIES = ['alarm', 'warning', 'info'];
@@ -37,7 +39,6 @@ export const VIEWS = ['home', 'weather', 'rooms', 'lights', 'climate', 'energy',
 
 const NUMERIC_OPS = new Set(['>', '>=', '<', '<=']);
 const num = (v) => (typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN);
-const text = (v, max) => String(v ?? '').trim().slice(0, max);
 
 /**
  * Whether the condition of a rule holds for `val`.
@@ -81,21 +82,21 @@ export function sanitizeAlerts(rules) {
     .filter((r) => r && typeof r === 'object')
     .map((r, i) => {
       const op = ALERT_OPS.includes(r.op) ? r.op : '>';
-      const value = NUMERIC_OPS.has(op) ? (Number.isFinite(num(r.value)) ? num(r.value) : 0) : typeof r.value === 'number' ? r.value : text(r.value, 60);
+      const value = NUMERIC_OPS.has(op) ? (Number.isFinite(num(r.value)) ? num(r.value) : 0) : typeof r.value === 'number' ? r.value : trimText(r.value, 60);
       const severity = SEVERITIES.includes(r.severity) ? r.severity : 'warning';
       return {
-        id: text(r.id, 40) || `alarm_${i + 1}`,
-        name: text(r.name, 60) || `Benachrichtigung ${i + 1}`,
+        id: trimText(r.id, 40) || `alarm_${i + 1}`,
+        name: trimText(r.name, 60) || `Benachrichtigung ${i + 1}`,
         enabled: r.enabled !== false,
-        state: text(r.state, 200),
+        state: trimText(r.state, 200),
         op,
         value,
         hysteresis: Math.max(0, Number(r.hysteresis) || 0),
         delaySeconds: Math.min(86400, Math.max(0, Math.round(Number(r.delaySeconds) || 0))),
         severity,
-        message: text(r.message, 200),
+        message: trimText(r.message, 200),
         view: VIEWS.includes(r.view) ? r.view : '',
-        room: text(r.room, 60),
+        room: trimText(r.room, 60),
         // alarms have to be acknowledged unless the rule says otherwise
         requireAck: typeof r.requireAck === 'boolean' ? r.requireAck : severity === 'alarm',
         push: r.push !== false,
@@ -123,8 +124,7 @@ export function jsonFileStore(file) {
     },
     save(list) {
       try {
-        fs.writeFileSync(file + '.tmp', JSON.stringify(list));
-        fs.renameSync(file + '.tmp', file);
+        writeFileAtomic(file, JSON.stringify(list));
       } catch (err) {
         console.error('Benachrichtigungen konnten nicht gespeichert werden:', err.message);
       }

@@ -1,0 +1,30 @@
+/*
+ * Animation details of this device (`data-effects` on <html>, Einstellungen → Anzeige).
+ * medium: still background, lighter glass blur, no endless decorative animations (edge light, radar,
+ *         rotating rings, waves, bubbles); status animations stay.
+ * low:    additionally no blur and no colour blobs, no endless or entrance animations at all – only
+ *         loading indicators (`.anim-loader`, `.skeleton`) and alarms (`role="alert"`) keep moving.
+ */
+:is([data-effects='medium'], [data-effects='low']) .backdrop i { animation: none; will-change: auto; }
+[data-effects='medium'] :is(.glass, .hud) { backdrop-filter: blur(10px); }
+:is([data-effects='medium'], [data-effects='low']) :is(.hud-core-sweep, .hud-spin, .hud-wave, .anim-float),
+:is([data-effects='medium'], [data-effects='low']) :is(.hud-edge, .glow-pulse)::before,
+:is([data-effects='medium'], [data-effects='low']) .icon-bubble.halo::after { animation: none; }
+:is([data-effects='medium'], [data-effects='low']) .glow-pulse::before { opacity: .5; }
+:is([data-effects='medium'], [data-effects='low']) .hud-bubble { display: none; }
+:is([data-effects='medium'], [data-effects='low']) .radar-sweep { display: none; }
+/* temperature effects stay as a still picture: crystals and hot air visible, no movement */
+:is([data-effects='medium'], [data-effects='low']) :is(.temp-crystal, .temp-haze path, .temp-heat .hero-temp-value) { animation: none; }
+:is([data-effects='medium'], [data-effects='low']) .temp-haze path { opacity: .35; }
+[data-effects='low'] .backdrop i, [data-effects='low'] :is(.hud-ping, .wx-ping) { display: none; }
+[data-effects='low'] :is(.glass, .hud, [class*='backdrop-blur']) { backdrop-filter: none; }
+[data-effects='low'] *:not(.anim-loader, .skeleton, [role='alert'], [role='alert'] *), [data-effects='low'] ::before, [data-effects='low'] ::after {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+.safe-b { padding-bottom: env(safe-area-inset-bottom); }
+.safe-t { padding-top: env(safe-area-inset-top); }

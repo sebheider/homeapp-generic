@@ -7,6 +7,7 @@ import { api, type WeatherData } from './api';
 import { WEATHER_FIELDS, type WeatherFieldKey } from './weatherFields';
 import { toNum } from './format';
 import { useStateValues, useStore } from './store';
+import { NO_STATES } from './selectors';
 
 /** Visual condition used to pick the animated icon and the colours. */
 export type Condition = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'thunder';
@@ -46,6 +47,7 @@ export function describeCode(code: number | null | undefined): CodeInfo {
 }
 
 export { uvChartHours, uvLevel, uvOutlook } from './uv';
+export type { HourlyEntry } from './uv';
 
 const COMPASS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
 /** German 8-point compass direction for a bearing in degrees (handles negative / > 360 values). */
@@ -93,14 +95,12 @@ export function fmtDuration(sec: number) {
 /** Converted values of the local weather station; keys are missing when not mapped / not available. */
 export type LocalWeather = Partial<Record<WeatherFieldKey, number>>;
 
-const NO_IDS: Record<string, string> = {};
-
 /** Values of the local weather station, already converted (wind in km/h); undefined when not mapped / not available. */
 export function useLocalWeather(): LocalWeather {
   const cfg = useStore((s) => s.config?.weather);
   const moduleEnabled = useStore((s) => s.config?.modules?.weather !== false);
   // only the mapped datapoints are subscribed, other value changes do not re-render
-  const vals = useStateValues(cfg?.states ?? NO_IDS);
+  const vals = useStateValues(cfg?.states ?? NO_STATES);
   const local: LocalWeather = {};
   if (!cfg || !moduleEnabled) return local;
   for (const f of WEATHER_FIELDS) {

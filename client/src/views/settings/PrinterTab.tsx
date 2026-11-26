@@ -7,16 +7,11 @@ import { useStore } from '../../lib/store';
 import type { BambuCamera, BambuConfig, PopupPosition, PopupSize, PrinterType } from '../../lib/types';
 import { Toggle } from '../../components/ui';
 import { PrinterWebcam } from '../../components/Printer';
-import { Card, Field, NumInput, Switch, dimUnless, sectionSetter, type TabProps } from './shared';
+import { Card, Field, NumInput, POPUP_SIZES, Switch, dimUnless, sectionSetter, type TabProps } from './shared';
 
 const POSITIONS: { value: PopupPosition; label: string }[] = [
   { value: 'corner', label: 'Klein in der Ecke' },
   { value: 'center', label: 'Mittig (über der App)' },
-];
-const SIZES: { value: PopupSize; label: string }[] = [
-  { value: 'medium', label: 'Mittel' },
-  { value: 'large', label: 'Groß' },
-  { value: 'full', label: 'Fast Vollbild' },
 ];
 const TYPES: { value: PrinterType; label: string }[] = [
   { value: 'octoprint', label: 'OctoPrint (Prusa, Creality, Voron …)' },
@@ -160,7 +155,7 @@ export function PrinterTab({ draft, setDraft }: TabProps) {
           </Field>
           <Field label="Größe">
             <select className="field" value={op.popupSize} onChange={(e) => set({ popupSize: e.target.value as PopupSize })}>
-              {SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {POPUP_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </Field>
         </div>

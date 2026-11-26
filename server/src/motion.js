@@ -17,7 +17,7 @@
  */
 import { EventEmitter } from 'node:events';
 import { kindPopupAllowed } from './popup-rules.js';
-import { isOn } from './util.js';
+import { isOn } from './util/states.js';
 
 /** Motion history shown by the dashboard's six-hour activity timeline. */
 const RECENT_WINDOW_MS = 6 * 60 * 60 * 1000;

@@ -28,7 +28,7 @@ export function shouldShowCameraPopup(event: MotionEvent, current: MotionEvent |
 }
 
 /** After its pop-up closed, a camera stays on the kiosk overview for this long. */
-export const CAMERA_HOLD_SECONDS = 180;
+const CAMERA_HOLD_SECONDS = 180;
 
 /**
  * Cameras (newest first, each once) whose pop-up-worthy detection is still recent: shown for the

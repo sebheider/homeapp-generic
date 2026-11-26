@@ -25,7 +25,7 @@ export function Chip({ on, onClick, children }: { on: boolean; onClick: () => vo
 }
 
 /** Explanation below the time inputs. */
-export const timeWindowHint = (w: { from: string; to: string }) =>
+const timeWindowHint = (w: { from: string; to: string }) =>
   w.from === w.to ? 'Ganztägig (von = bis)' : w.from > w.to ? 'Über Mitternacht: der Zeitraum nach 0 Uhr gehört zum Wochentag, an dem er begann' : 'Bis-Zeit gilt nicht mehr';
 
 /** Weekday chips of one window. */

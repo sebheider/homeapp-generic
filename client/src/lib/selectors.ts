@@ -6,8 +6,11 @@ import { isOn, useStore } from './store';
 import { toNum } from './format';
 import type { Device, DeviceType, Room } from './types';
 
-const EMPTY_DEVICES: Device[] = [];
+/** Empty device list with a stable reference (selectors must not return a new array each time). */
+export const EMPTY_DEVICES: Device[] = [];
 const EMPTY_ROOMS: Room[] = [];
+/** Empty datapoint map `{ key: stateId }` with a stable reference, for devices or settings without datapoints. */
+export const NO_STATES: Record<string, string> = {};
 
 /** All configured devices (stable reference as long as the config does not change). */
 export const useDevices = (): Device[] => useStore((s) => s.config?.devices ?? EMPTY_DEVICES);

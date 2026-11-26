@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
-import { searchObjects } from './util.js';
+import { searchObjects } from './util/states.js';
 
 const RETRY_MS = 10000;
 const REQUEST_TIMEOUT = 15000;

@@ -80,7 +80,7 @@ export const extensionIdOf = (view: string) => (view.startsWith(VIEW_PREFIX) ? v
 export const isExtensionView = (view: string): view is `ext-${string}` => /^ext-[a-z][a-z0-9-]*[a-z0-9]$/.test(view);
 
 /** Defaults of the settings slots (shown until the admin saved own values). */
-export function extensionDefaults(manifest: ExtensionManifest): ExtensionConfig {
+function extensionDefaults(manifest: ExtensionManifest): ExtensionConfig {
   return {
     enabled: false,
     settings: Object.fromEntries(manifest.settings.map((s) => [s.key, s.type === 'datapoint' ? '' : s.default ?? null])),

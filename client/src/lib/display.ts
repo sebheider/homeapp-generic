@@ -28,7 +28,6 @@
  * kiosk browsers whose start page is fixed; `?design=nexus` (or `standard`, `custom`) picks the overview design
  * and `?effects=medium` (or `high`, `low`) the animation details. `?fps=1` shows the frame rate (lib/perf).
  */
-import { useCallback, useEffect, useState } from 'react';
 
 export type DashboardDesign = 'standard' | 'nexus' | 'custom';
 
@@ -37,7 +36,7 @@ const DESIGNS: readonly DashboardDesign[] = ['standard', 'nexus', 'custom'];
 /** Valid overview design from a stored or typed value; anything unknown means "standard". */
 export const dashboardDesign = (v: unknown): DashboardDesign => (DESIGNS.includes(v as DashboardDesign) ? (v as DashboardDesign) : 'standard');
 
-/** Amount of graphical effects (blur, glow, animations), see index.css `[data-effects]`. */
+/** Amount of graphical effects (blur, glow, animations), see styles/effects.css `[data-effects]`. */
 export type EffectsLevel = 'high' | 'medium' | 'low';
 
 const EFFECTS_LEVELS: readonly EffectsLevel[] = ['high', 'medium', 'low'];
@@ -183,69 +182,8 @@ export function inTimeWindow(from: string, to: string, d = new Date()) {
   return a < b ? now >= a && now < b : now >= a || now < b;
 }
 
-const ACTIVITY = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'] as const;
-
-/**
- * True after `ms` milliseconds without pointer, touch, wheel or keyboard input; false again on the
- * next input. `ms <= 0` switches the detection off (never idle).
- */
-export function useIdle(ms: number) {
-  const [idle, setIdle] = useState(false);
-  useEffect(() => {
-    setIdle(false);
-    if (ms <= 0) return;
-    let timer = 0;
-    const reset = () => {
-      setIdle(false); // no re-render while already active
-      clearTimeout(timer);
-      timer = window.setTimeout(() => setIdle(true), ms);
-    };
-    ACTIVITY.forEach((e) => window.addEventListener(e, reset, { passive: true }));
-    reset();
-    return () => {
-      clearTimeout(timer);
-      ACTIVITY.forEach((e) => window.removeEventListener(e, reset));
-    };
-  }, [ms]);
-  return idle;
-}
-
-/** The screensaver starts (again) after this long without input. */
-export const SCREENSAVER_WAKE_MS = 60_000;
-
 /** Datapoint of a kiosk agent's value (see server kiosk.js). */
 export const kioskState = (agent: string, key: string) => `homeapp.kiosk.${agent}.${key}`;
-
-/**
- * Screensaver state while `active` (inside its time window): sleeping after `ms` without input.
- * While sleeping no input is watched; only `wake()` (a touch on the screensaver) ends it, so the
- * waking touch can not reach the app. Every later input postpones the next start by `ms`.
- * `hold` (somebody in front of the presence sensor) wakes it and keeps it away; the countdown
- * starts again when `hold` ends.
- */
-export function useScreensaver(active: boolean, ms = SCREENSAVER_WAKE_MS, hold = false): [sleeping: boolean, wake: () => void] {
-  const [sleeping, setSleeping] = useState(false);
-  useEffect(() => {
-    if (!active || hold) {
-      setSleeping(false);
-      return;
-    }
-    if (sleeping) return;
-    let timer = 0;
-    const reset = () => {
-      clearTimeout(timer);
-      timer = window.setTimeout(() => setSleeping(true), ms);
-    };
-    ACTIVITY.forEach((e) => window.addEventListener(e, reset, { passive: true }));
-    reset();
-    return () => {
-      clearTimeout(timer);
-      ACTIVITY.forEach((e) => window.removeEventListener(e, reset));
-    };
-  }, [active, sleeping, ms, hold]);
-  const wake = useCallback(() => setSleeping(false), []);
-  return [active && sleeping, wake];
-}
 
 /**
  * Spot of the screensaver clock in minute `n` (centre in percent of width and height): changes every
@@ -259,38 +197,6 @@ export function screensaverSpot(n: number) {
   return { x: Math.round(25 + rnd(1) * 50), y: Math.round(25 + rnd(2) * 50) };
 }
 
-/** Whether a CSS media query matches (follows changes, e.g. rotating a tablet). */
-export function useMedia(query: string) {
-  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setMatch(mq.matches);
-    on();
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, [query]);
-  return match;
-}
-
-/**
- * Screens big enough for the one-screen kiosk overview: landscape from about 900×560 (designed for
- * 1280×800) or portrait from 768×1100 (designed for 800×1280, e.g. a 10" display with 1200×1920). Narrower
- * portrait screens get the phone shell, so they keep the normal scrolling overview.
- */
-const KIOSK_SCREEN = '(orientation: landscape) and (min-width: 900px) and (min-height: 560px), (orientation: portrait) and (min-width: 768px) and (min-height: 1100px)';
-/** Portrait format (taller than wide); the kiosk overview then stacks its panels. */
-const PORTRAIT = '(orientation: portrait)';
-
-/** True if the kiosk mode is on and the screen is big enough for its one-screen overview. */
-export function useKioskLayout(kiosk: boolean) {
-  return useMedia(KIOSK_SCREEN) && kiosk;
-}
-
-/** True on screens in portrait format (taller than wide, e.g. a wall display mounted upright). */
-export function usePortrait() {
-  return useMedia(PORTRAIT);
-}
-
 /**
  * Shell of the navigation by screen size: `bar` = phones (header + bottom bar), `dock` = tablets and wall
  * displays in portrait format (top row + bottom dock, the hidden menu opens as launcher sheet),
@@ -298,22 +204,13 @@ export function usePortrait() {
  */
 export type NavShell = 'bar' | 'dock' | 'sidebar';
 export const navShell = (w: number, h: number): NavShell => (w < 768 ? 'bar' : h >= w ? 'dock' : 'sidebar');
-const NAV_DOCK = '(min-width: 768px) and (orientation: portrait)';
-const NAV_BAR = '(max-width: 767.98px)';
-
-/** Current navigation shell; follows rotating and resizing. */
-export function useNavShell(): NavShell {
-  const bar = useMedia(NAV_BAR);
-  const dock = useMedia(NAV_DOCK);
-  return bar ? 'bar' : dock ? 'dock' : 'sidebar';
-}
 
 /** Columns of the launcher grid: balanced rows, at most five tiles per row. */
 export const launcherColumns = (n: number) => (n <= 4 ? Math.max(n, 1) : n <= 6 ? 3 : n <= 8 ? 4 : 5);
 
 /** Screen sizes (CSS pixels) the kiosk layouts are designed for: landscape and portrait format. */
-export const KIOSK_BASE = { w: 1280, h: 800 } as const;
-export const KIOSK_BASE_PORTRAIT = { w: 800, h: 1280 } as const;
+const KIOSK_BASE = { w: 1280, h: 800 } as const;
+const KIOSK_BASE_PORTRAIT = { w: 800, h: 1280 } as const;
 const KIOSK_MAX_SCALE = 2;
 
 /** Manual zoom choices of the settings (0 = automatic). */
@@ -339,25 +236,6 @@ export function kioskScale(w: number, h: number, zoom = 0) {
   return Math.round(Math.min(KIOSK_MAX_SCALE, Math.max(1, s)) * 100) / 100;
 }
 
-/**
- * Zoom factor of the kiosk views for the current window (1 outside the kiosk mode); follows resizing.
- * `zoom` > 0 is a manual factor of the settings and replaces the automatic one.
- */
-export function useKioskScale(kiosk: boolean, zoom = 0) {
-  const [scale, setScale] = useState(() => (kiosk ? kioskScale(window.innerWidth, window.innerHeight, zoom) : 1));
-  useEffect(() => {
-    if (!kiosk) {
-      setScale(1);
-      return;
-    }
-    const on = () => setScale(kioskScale(window.innerWidth, window.innerHeight, zoom));
-    on();
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, [kiosk, zoom]);
-  return scale;
-}
-
 /** What the browser reports about the screen; shown in the settings to set up kiosk browsers. */
 export interface ScreenInfo {
   /** Window size in CSS pixels. */
@@ -368,25 +246,6 @@ export interface ScreenInfo {
   portrait: boolean;
   /** Big enough for the one-screen kiosk overview (see `KIOSK_SCREEN`). */
   kioskFits: boolean;
-}
-
-export const screenInfo = (): ScreenInfo => ({
-  w: window.innerWidth,
-  h: window.innerHeight,
-  dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
-  portrait: window.innerHeight > window.innerWidth,
-  kioskFits: window.matchMedia(KIOSK_SCREEN).matches,
-});
-
-/** Current `screenInfo()`; follows resizing and rotating. */
-export function useScreenInfo() {
-  const [info, setInfo] = useState(screenInfo);
-  useEffect(() => {
-    const on = () => setInfo(screenInfo());
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return info;
 }
 
 /**

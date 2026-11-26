@@ -10,6 +10,7 @@
  *   - the boundary follows each frame immediately, so browsers show a frame without waiting for the next one,
  *   - `X-Accel-Buffering: no` keeps reverse proxies (nginx) from buffering the stream.
  */
+import { nextDelay } from './util/timers.js';
 
 export const BOUNDARY = 'homeappframe';
 /** Upstream data is dropped if no complete frame turns up within this many bytes. */
@@ -201,7 +202,7 @@ export class MjpegHub {
   lost(key, entry) {
     if (this.streams.get(key) !== entry || entry.retry) return;
     if (!entry.clients.size && !entry.waiting) return this.close(key, entry);
-    entry.delay = Math.min(this.maxRetryMs, entry.delay ? entry.delay * 2 : this.retryMs);
+    entry.delay = nextDelay(entry.delay, this.retryMs, this.maxRetryMs);
     entry.retry = setTimeout(() => {
       entry.retry = null;
       if (this.streams.get(key) !== entry) return;

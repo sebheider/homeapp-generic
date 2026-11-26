@@ -5,7 +5,7 @@
 import { useState, type ReactNode } from 'react';
 import { Copy, Trash2 } from 'lucide-react';
 import type { EnvDefault } from '../../lib/api';
-import type { AppConfig } from '../../lib/types';
+import type { AppConfig, PopupSize } from '../../lib/types';
 import { Toggle } from '../../components/ui';
 
 /** Props every settings tab receives. */
@@ -38,6 +38,13 @@ export const patchById = <T extends { id: string }>(list: T[], id: string, p: Pa
 
 /** Adds `v` to the list or removes it if it is already contained. */
 export const toggleItem = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+/** Sizes of the camera and printer pop-ups to choose from. */
+export const POPUP_SIZES: { value: PopupSize; label: string }[] = [
+  { value: 'medium', label: 'Mittel' },
+  { value: 'large', label: 'Groß' },
+  { value: 'full', label: 'Fast Vollbild' },
+];
 
 /** Creates a readable id from a name ("Küche" -> "kueche") that is not in `taken` yet (adds _2, _3, ...). */
 export const uid = (base: string, taken: string[]) => {

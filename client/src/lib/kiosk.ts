@@ -1,7 +1,7 @@
 import type { KioskAgent, VentilationConfig } from './types';
 
 /** CO₂ thresholds of the ventilation advice (server ventilation.js `sanitizeVentilation` defaults). */
-export const CO2_DEFAULTS = { co2Max: 1000, co2Warn: 1400 };
+const CO2_DEFAULTS = { co2Max: 1000, co2Warn: 1400 };
 
 /**
  * Traffic light thresholds from the ventilation advice: yellow from `co2Max` (ventilation recommended),

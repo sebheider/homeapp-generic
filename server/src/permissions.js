@@ -21,7 +21,6 @@
 const OWNER_WRITE = 0x200;
 const GROUP_WRITE = 0x020;
 const OTHERS_WRITE = 0x002;
-export const DEFAULT_STATE_ACL = 0x664;
 
 /** ioBroker user id for a login name. */
 export const userIdOf = (name) => `system.user.${String(name || '').trim().toLowerCase().replace(/\s+/g, '_')}`;

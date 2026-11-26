@@ -1,0 +1,55 @@
+/* Page background: drifting colour blobs, time-of-day tint and the starry "Nexus" sky. */
+.backdrop {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden;
+  background: radial-gradient(1200px 800px at 80% -10%, var(--bg2), var(--bg));
+}
+.backdrop i {
+  position: absolute; border-radius: 50%; filter: blur(90px); will-change: transform;
+  animation: drift 26s ease-in-out infinite alternate;
+}
+.backdrop i:nth-child(1) { width: 46vmax; height: 46vmax; left: -12vmax; top: -10vmax; background: var(--blob1); }
+.backdrop i:nth-child(2) { width: 40vmax; height: 40vmax; right: -10vmax; top: 25vh; background: var(--blob2); animation-duration: 32s; animation-delay: -8s; }
+.backdrop i:nth-child(3) { width: 34vmax; height: 34vmax; left: 25vw; bottom: -16vmax; background: var(--blob3); animation-duration: 38s; animation-delay: -15s; }
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(6vmax, 4vmax, 0) scale(1.15); }
+}
+/* time-of-day tint (lib/ambience.ts): a still layer over the blobs, fades over when the part of the day changes */
+.backdrop:not(.backdrop-nexus)::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 6s ease;
+  background: var(--daypart-tint, none);
+}
+.backdrop[data-daypart]:not(.backdrop-nexus)::after { opacity: 1; }
+.backdrop[data-daypart='dawn'] {
+  --daypart-tint: radial-gradient(90vmax 60vmax at 12% 108%, rgba(251, 146, 60, .16), transparent 70%), radial-gradient(70vmax 50vmax at 92% -6%, rgba(244, 114, 182, .1), transparent 70%);
+}
+.backdrop[data-daypart='day'] { --daypart-tint: radial-gradient(80vmax 55vmax at 85% -12%, rgba(125, 211, 252, .11), transparent 70%); }
+.backdrop[data-daypart='dusk'] {
+  --daypart-tint: radial-gradient(90vmax 60vmax at 88% 108%, rgba(249, 115, 22, .15), transparent 70%), radial-gradient(70vmax 55vmax at 0% 0%, rgba(168, 85, 247, .13), transparent 70%);
+}
+.backdrop[data-daypart='night'] {
+  --daypart-tint: linear-gradient(180deg, rgba(2, 6, 23, .28), rgba(2, 6, 23, .1)), radial-gradient(60vmax 45vmax at 80% 0%, rgba(99, 102, 241, .1), transparent 70%);
+}
+/* Nexus overview: deep space with stars and a faint hexagon grid instead of the colour blobs */
+.backdrop-nexus {
+  background:
+    radial-gradient(1000px 620px at 84% -14%, rgba(255, 63, 216, 0.17), transparent 60%),
+    radial-gradient(900px 700px at 0% 112%, rgba(34, 228, 255, 0.13), transparent 60%),
+    radial-gradient(820px 560px at 52% 42%, rgba(99, 102, 241, 0.2), transparent 66%),
+    linear-gradient(180deg, #070a24, #02030a);
+}
+.backdrop-nexus i { display: none; }
+.backdrop-nexus::before {
+  content: ''; position: absolute; inset: 0; opacity: 0.6;
+  background-image:
+    radial-gradient(1.2px 1.2px at 24px 36px, #fff, transparent), radial-gradient(1px 1px at 150px 96px, #bfeaff, transparent),
+    radial-gradient(1px 1px at 262px 214px, #fff, transparent), radial-gradient(1.4px 1.4px at 86px 268px, #e8f4ff, transparent),
+    radial-gradient(1px 1px at 330px 44px, #ffffffb0, transparent), radial-gradient(1px 1px at 202px 336px, #a6e6ff, transparent),
+    radial-gradient(1px 1px at 60px 120px, #ffffff90, transparent), radial-gradient(1.3px 1.3px at 410px 300px, #fff, transparent),
+    radial-gradient(1px 1px at 300px 470px, #c9b8ff, transparent), radial-gradient(1px 1px at 480px 160px, #ffffffa0, transparent);
+  background-size: 380px 380px, 380px 380px, 380px 380px, 380px 380px, 380px 380px, 380px 380px, 530px 530px, 530px 530px, 530px 530px, 530px 530px;
+}
+.backdrop-nexus::after {
+  content: ''; position: absolute; inset: 0; opacity: 0.8;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='39' height='68' viewBox='0 0 56 97'%3E%3Cpath d='M28 0 56 16v32L28 64 0 48V16zM28 64v33' fill='none' stroke='rgba(120,200,255,0.05)'/%3E%3C/svg%3E");
+}

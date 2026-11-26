@@ -3,7 +3,7 @@
  *
  * `fields` lists the ioBroker datapoints a device of that type can use (the settings editor
  * renders one datapoint picker per field); `options` are additional device settings
- * (ranges, units, mode lists). The cards in DeviceCards.tsx implement the behaviour.
+ * (ranges, units, mode lists). The cards in components/device-cards/ implement the behaviour.
  */
 import type { ChoiceOption, DeviceType } from './types';
 

@@ -12,7 +12,8 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { isDismissed, needsAck, useStore } from '../lib/store';
-import { inTimeWindow, kioskState, screensaverSpot, useScreensaver } from '../lib/display';
+import { inTimeWindow, kioskState, screensaverSpot } from '../lib/display';
+import { useScreensaver } from '../lib/displayHooks';
 import { clockTime, num } from '../lib/format';
 import { describeCode, useLocalWeather, useWeatherData } from '../lib/weather';
 import { MiniWeatherIcon } from './WeatherIcon';

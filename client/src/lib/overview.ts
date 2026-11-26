@@ -23,7 +23,7 @@ export const FLOORS = [
 export const floorOf = (r: Room) => (typeof r.floor === 'number' && FLOORS.some((f) => f.value === r.floor) ? r.floor : 0);
 
 /** Numeric value of a datapoint, or null if missing / not a number. */
-export function valueOf(states: Record<string, StateEntry>, id?: string): number | null {
+function valueOf(states: Record<string, StateEntry>, id?: string): number | null {
   const v = id ? states[id]?.val : undefined;
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
   if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);

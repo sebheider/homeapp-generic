@@ -8,11 +8,11 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 /** Minimum horizontal distance (px) of a swipe. */
-export const SWIPE_MIN_PX = 70;
+const SWIPE_MIN_PX = 70;
 /** The horizontal distance must be at least this many times the vertical one. */
-export const SWIPE_RATIO = 2;
+const SWIPE_RATIO = 2;
 /** Slower gestures are treated as dragging, not as a swipe (ms). */
-export const SWIPE_MAX_MS = 800;
+const SWIPE_MAX_MS = 800;
 
 /** Direction of a finished gesture: 1 = next page (swipe left), -1 = previous page (swipe right), 0 = none. */
 export function swipeDirection(dx: number, dy: number, ms: number): -1 | 0 | 1 {

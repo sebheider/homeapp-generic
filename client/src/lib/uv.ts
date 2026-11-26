@@ -14,7 +14,8 @@ export function uvLevel(uv: number | null | undefined) {
   return { label: 'Extrem', color: '#a855f7', advice: 'Aufenthalt im Freien möglichst vermeiden.' };
 }
 
-type HourlyEntry = WeatherData['hourly'][number];
+/** One hour of the internet forecast. */
+export type HourlyEntry = WeatherData['hourly'][number];
 
 /**
  * Hours of a UV forecast: the next `count` hours; once the sun is down (all values below 0.5), the

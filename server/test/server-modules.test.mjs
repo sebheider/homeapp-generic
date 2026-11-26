@@ -1,9 +1,15 @@
 // Basic Auth check, camera list and the small shared helpers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { basicAuth, safeEqual } from '../src/auth.js';
 import { buildCameraList } from '../src/cameras.js';
 import { searchObjects, round, clamp, isOn, escapeRegExp } from '../src/util.js';
+import { writeFileAtomic } from '../src/util/fs.js';
+import { clampNumber, finiteOrNull, round1 } from '../src/util/number.js';
+import { nextDelay } from '../src/util/timers.js';
 
 const header = (user, pass) => `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
 
@@ -71,4 +77,52 @@ test('util helpers', () => {
   assert.equal(clamp(-1, 0, 10), 0);
   assert.deepEqual([true, 1, 'true', false, 0, 'false', null].map(isOn), [true, true, true, false, false, false, false]);
   assert.equal(new RegExp(`^${escapeRegExp('a.b (c)')}$`).test('a.b (c)'), true);
+});
+
+test('number helpers: clampNumber, finiteOrNull, round1, nextDelay', () => {
+  assert.deepEqual([null, undefined, '', 'x', NaN].map((v) => clampNumber(v, 1, 10, 5)), [5, 5, 5, 5, 5]);
+  assert.deepEqual(['3', 0, 12, -4.5].map((v) => clampNumber(v, 1, 10, 5)), [3, 1, 10, 1]);
+  assert.deepEqual([1.5, '2', NaN, Infinity, null].map(finiteOrNull), [1.5, null, null, null, null]);
+  assert.equal(round1(21.26), 21.3);
+  assert.equal(round1(null), null);
+  assert.deepEqual([0, 1000, 8000, 16000].map((d) => nextDelay(d, 1000, 15000)), [1000, 2000, 15000, 15000]);
+});
+
+test('writeFileAtomic replaces the file and retries a busy rename', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'homeapp-atomic-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'data.json');
+  writeFileAtomic(file, '{"a":1}');
+  assert.equal(fs.readFileSync(file, 'utf8'), '{"a":1}');
+  assert.equal(fs.existsSync(`${file}.tmp`), false);
+
+  const rename = fs.renameSync;
+  let calls = 0;
+  const busy = (code, times) => (from, to) => {
+    calls++;
+    if (calls <= times) throw Object.assign(new Error(`${code}: rename failed`), { code });
+    return rename(from, to);
+  };
+  let mocked = t.mock.method(fs, 'renameSync', busy('EPERM', 2));
+  writeFileAtomic(file, '{"a":2}', { retries: 3 });
+  assert.equal(calls, 3, 'two busy attempts, then success');
+  assert.equal(fs.readFileSync(file, 'utf8'), '{"a":2}');
+  mocked.mock.restore();
+
+  calls = 0;
+  mocked = t.mock.method(fs, 'renameSync', busy('EBUSY', 5));
+  assert.throws(() => writeFileAtomic(file, '{"a":3}', { retries: 2 }), { code: 'EBUSY' });
+  assert.equal(calls, 3, 'gives up after the retries');
+  mocked.mock.restore();
+
+  calls = 0;
+  mocked = t.mock.method(fs, 'renameSync', busy('ENOSPC', 1));
+  assert.throws(() => writeFileAtomic(file, '{"a":4}', { retries: 5 }), { code: 'ENOSPC' });
+  assert.equal(calls, 1, 'other errors are not retried');
+  mocked.mock.restore();
+
+  calls = 0;
+  t.mock.method(fs, 'renameSync', busy('EPERM', 1));
+  assert.throws(() => writeFileAtomic(file, '{"a":5}'), { code: 'EPERM' });
+  assert.equal(calls, 1, 'no retries by default');
 });

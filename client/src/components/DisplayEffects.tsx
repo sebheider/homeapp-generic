@@ -8,7 +8,8 @@
  */
 import { useEffect, useState } from 'react';
 import { useStore } from '../lib/store';
-import { inTimeWindow, kioskState, useIdle } from '../lib/display';
+import { inTimeWindow, kioskState } from '../lib/display';
+import { useIdle } from '../lib/displayHooks';
 import { useNow } from '../lib/hooks';
 import { clamp } from '../lib/format';
 

@@ -40,6 +40,9 @@ export const toNum = (v: unknown, fallback = 0) => {
 /** Limits `v` to the range a..b. */
 export const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
+/** Number with at least two digits ("07"), e.g. for the digits of a clock. */
+export const pad2 = (n: number) => String(n).padStart(2, '0');
+
 /** Local wall-clock time "HH:MM" of a timestamp or date. */
 const clockFormat = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
 export const clockTime = (t: number | Date) => clockFormat.format(t);

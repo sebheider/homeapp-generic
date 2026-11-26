@@ -18,7 +18,8 @@
  * Times are server local time (set the container time zone with TZ, e.g. Europe/Berlin).
  */
 
-const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+/** Every weekday (JavaScript numbering: 0 = Sunday … 6 = Saturday). */
+export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 /** Kinds of detection: normal motion and advanced detection (people). */
 export const KINDS = ['motion', 'people'];
 
