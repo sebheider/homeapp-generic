@@ -1,8 +1,8 @@
 /**
  * Ambience of the app: the time of day tints the background (dawn, day, dusk, night – by the sun times of
- * the weather data, otherwise by the clock), rain or snow falls through the hero panel and the outside
+ * the weather data, otherwise by the clock), weather effects animate the hero panel and the outside
  * temperature gets its colour (frost, mild, heat). All follow the effects level (`html[data-effects]`):
- * the tint is a still layer, the precipitation only runs on 'high'.
+ * the tint is a still layer, the hero effects only run on 'high'.
  */
 import type { Condition } from './weather';
 
@@ -29,10 +29,12 @@ export function daypart(now: Date, sunrise?: number | null, sunset?: number | nu
   return 'night';
 }
 
-/** Precipitation shown in the hero panel for a weather condition (`null` = dry). */
-export function precipitation(kind: Condition | null | undefined): 'rain' | 'snow' | null {
-  if (kind === 'rain' || kind === 'drizzle' || kind === 'thunder') return 'rain';
+/** Weather effect shown in the hero panel for a weather condition. */
+export function precipitation(kind: Condition | null | undefined): 'rain' | 'snow' | 'thunder' | 'fog' | null {
+  if (kind === 'thunder') return 'thunder';
+  if (kind === 'rain' || kind === 'drizzle') return 'rain';
   if (kind === 'snow') return 'snow';
+  if (kind === 'fog') return 'fog';
   return null;
 }
 

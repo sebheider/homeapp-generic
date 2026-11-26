@@ -262,6 +262,16 @@ export function DisplayTab() {
         <p className="text-[0.7rem] text-muted mt-3">Weniger Details entlasten die Grafik von Wandtablets und älteren Geräten. Ist im Betriebssystem „Bewegung reduzieren“ eingeschaltet, entfallen Animationen unabhängig von dieser Stufe.</p>
       </Card>
 
+      <Card title="Wetteranimationen im Hero">
+        <p className="text-xs text-muted mb-3">Die Animationen erscheinen im Hero der Standard-Übersicht bei Animationsdetails „Hoch“. Einstellungen gelten nur für diesen Browser; Wettersymbole und Tageszeitfarbe bleiben unberührt.</p>
+        <div className="grid sm:grid-cols-2 gap-x-8">
+          <Switch label="Regen" checked={d.heroWeatherRain} onChange={(v) => set({ heroWeatherRain: v })} />
+          <Switch label="Schnee" checked={d.heroWeatherSnow} onChange={(v) => set({ heroWeatherSnow: v })} />
+          <Switch label="Gewitter" checked={d.heroWeatherThunder} onChange={(v) => set({ heroWeatherThunder: v })} />
+          <Switch label="Nebel" checked={d.heroWeatherFog} onChange={(v) => set({ heroWeatherFog: v })} />
+        </div>
+      </Card>
+
       <Card title="Menü">
         <div className="grid sm:grid-cols-3 gap-3 mb-3" role="radiogroup" aria-label="Menügröße">
           {MENU_MODES.map((o) => {
