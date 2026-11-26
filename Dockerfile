@@ -3,11 +3,16 @@
 # Nothing has to be installed or built beforehand: the npm packages and the frontend are built in the
 # stages below. Old Docker versions on which `npm ci` aborts with "Exit handler never called!" (some
 # Synology models) can use Dockerfile.prebuilt instead, see README → Fehlersuche.
+#
+# The two build stages run on the platform of the building machine ($BUILDPLATFORM): their results
+# (static frontend files, pure-JavaScript server packages) are the same for every architecture. A
+# multi-platform build (amd64 + arm64) therefore never runs npm under emulation (QEMU), where `npm ci`
+# can crash with "Illegal instruction". Only the small runtime stage is built per architecture.
 
 # ---------------------------------------------------------------------------
 # Stage 1: build the React frontend (Vite + Tailwind)
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS client-build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS client-build
 WORKDIR /build/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
@@ -17,9 +22,9 @@ COPY CHANGELOG.md /build/CHANGELOG.md
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# Stage 2: install production dependencies of the Node.js backend
+# Stage 2: install production dependencies of the Node.js backend (no native modules)
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS server-deps
+FROM --platform=$BUILDPLATFORM node:22-alpine AS server-deps
 WORKDIR /build/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev
