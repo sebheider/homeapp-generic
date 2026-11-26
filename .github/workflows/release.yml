@@ -32,7 +32,15 @@ jobs:
           fi
           cat notes.md
 
+      # Wird ein Tag erneut gepusht (z. B. nach einem Umschreiben der Historie), gibt es das Release schon:
+      # dann nur Titel und Notes aktualisieren statt mit "Release.tag_name already exists" abzubrechen.
       - name: Release veröffentlichen
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "HomeApp $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "HomeApp $GITHUB_REF_NAME" --notes-file notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "HomeApp $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          fi
