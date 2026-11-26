@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.7.3] – 2026-11-26
+
+Sicherheitsupdate der Server-Abhängigkeiten.
+
+### Sicherheit
+- `body-parser` (über Express) auf 1.20.9 aktualisiert: Behebt eine als hoch eingestufte Lücke, über die komprimierte Anfragen mit angehängten Daten den Server lahmlegen konnten (Denial of Service).
+
+### Behoben
+- Das Docker-Image für arm64 wird wieder gebaut: Frontend und npm-Pakete entstehen jetzt auf der Plattform des Build-Rechners statt unter Emulation, wo `npm ci` abstürzte und der Build hängen blieb.
+
 ## [2.7.2] – 2026-11-26
 
 Für die Veröffentlichung aufgeräumt: Code neu gegliedert, nur noch erfundene Beispieldaten.
