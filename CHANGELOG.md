@@ -13,6 +13,7 @@ Für die Veröffentlichung aufgeräumt: Code neu gegliedert, nur noch erfundene 
 
 ### Behoben
 - Das Speichern der Einstellungen schlägt unter Windows nicht mehr gelegentlich mit „EPERM“ fehl, wenn die Datei kurz von einem anderen Programm (z. B. einem Virenscanner) gesperrt ist.
+- Der Release-Workflow bricht bei einem erneut gepushten Versions-Tag nicht mehr mit „Release.tag_name already exists“ ab, sondern aktualisiert Titel und Notes des vorhandenen Releases.
 
 ## [2.7.1] – 2026-11-26
 
