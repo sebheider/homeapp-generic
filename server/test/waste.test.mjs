@@ -10,8 +10,8 @@ const cfg = sanitizeWaste({ enabled: true, url: 'https://example.org/ics' });
 
 test('parses a pickup calendar (all-day events, VALARM, VTIMEZONE)', () => {
   const ev = parseIcs(SAMPLE);
-  assert.equal(ev.length, 18);
-  assert.deepEqual(ev[0], { date: '2026-11-03', summary: 'Biotonne Regelabfuhr' });
+  assert.equal(ev.length, 15);
+  assert.deepEqual(ev[0], { date: '2026-11-05', summary: 'Biotonne Regelabfuhr' });
   assert.deepEqual(new Set(ev.map((e) => wasteKind(e.summary).key)), new Set(['bio', 'rest', 'paper', 'yellow']));
   // the RRULEs of the time zone definition are not pickups
   assert.ok(ev.every((e) => e.date.startsWith('2026-')));
@@ -56,21 +56,21 @@ test('line folding, escaped text, UTC times, RRULE and EXDATE', () => {
 test('hints: the evening before from remindFrom, on the pickup day until remindUntil', () => {
   const days = groupByDay(parseIcs(SAMPLE));
   const at = (d, h, m = 0) => wasteHints(days, cfg, new Date(2026, 10, d, h, m));
-  assert.deepEqual(at(2, 16, 59), []);
-  const evening = at(2, 17);
+  assert.deepEqual(at(4, 16, 59), []);
+  const evening = at(4, 17);
   assert.equal(evening.length, 1);
-  assert.equal(evening[0].id, 'waste:2026-11-03');
+  assert.equal(evening[0].id, 'waste:2026-11-05');
   assert.equal(evening[0].severity, 'warning');
   assert.match(evening[0].message, /^Morgen wird abgeholt: Biotonne und Restmülltonne/);
-  const morning = at(3, 9, 59);
+  const morning = at(5, 9, 59);
   assert.match(morning[0].message, /^Heute wird abgeholt/);
   // same id and start: a hint dismissed in the evening stays dismissed in the morning
   assert.equal(morning[0].since, evening[0].since);
-  assert.deepEqual(at(3, 10), []);
+  assert.deepEqual(at(5, 10), []);
   // hidden kinds do not cause hints
   const onlyRest = groupByDay(parseIcs(SAMPLE), ['bio']);
-  assert.match(wasteHints(onlyRest, cfg, new Date(2026, 10, 2, 20))[0].message, /: Restmülltonne – /);
-  assert.deepEqual(wasteHints(onlyRest, cfg, new Date(2026, 10, 9, 20)), []);
+  assert.match(wasteHints(onlyRest, cfg, new Date(2026, 10, 4, 20))[0].message, /: Restmülltonne – /);
+  assert.deepEqual(wasteHints(onlyRest, cfg, new Date(2026, 10, 11, 20)), []);
 });
 
 test('sanitizeWaste converts webcal and rejects other schemes', () => {
@@ -84,14 +84,14 @@ test('service fetches, caches and keeps the cache when the download fails', asyn
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'homeapp-waste-'));
   let fail = false;
   const fetchImpl = async () => (fail ? { ok: false, status: 503 } : { ok: true, text: async () => SAMPLE });
-  const now = () => new Date(2026, 10, 2, 18);
+  const now = () => new Date(2026, 10, 4, 18);
   const svc = new WasteService({ dataDir: dir, fetchImpl, now });
   let changes = 0;
   svc.on('change', () => changes++);
   svc.configure(cfg);
   await svc.refresh();
-  assert.equal(svc.data().upcoming[0].date, '2026-11-03');
-  assert.equal(svc.data().last, '2026-12-29');
+  assert.equal(svc.data().upcoming[0].date, '2026-11-05');
+  assert.equal(svc.data().last, '2026-12-31');
   assert.equal(svc.hints().length, 1);
   assert.ok(changes > 0);
   assert.ok(fs.existsSync(path.join(dir, 'waste.json')));
@@ -126,9 +126,9 @@ test('disabled service and demo calendar', () => {
 test('previewWaste summarises a calendar', async () => {
   const p = await previewWaste('webcal://example.org/x', { fetchImpl: async () => ({ ok: true, text: async () => SAMPLE }), now: new Date(2026, 10, 20) });
   assert.equal(p.url, 'https://example.org/x');
-  assert.equal(p.count, 18);
+  assert.equal(p.count, 15);
   assert.equal(p.kinds.length, 4);
-  assert.equal(p.next[0].date, '2026-11-24');
+  assert.equal(p.next[0].date, '2026-11-26');
   await assert.rejects(previewWaste('ftp://x'), /http/);
   await assert.rejects(previewWaste('https://x', { fetchImpl: async () => ({ ok: true, text: async () => '<html>' }) }), /kein iCalendar/);
 });
