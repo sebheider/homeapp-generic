@@ -8,22 +8,71 @@ import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudMoon, CloudRain, Cl
 import type { Condition } from '../lib/weather';
 import { weatherExtras } from '../lib/iconFx';
 import { moonAppearance, moonLitPath } from '../lib/moon';
+import { sunMood, type SunMood } from '../lib/ambience';
 import { useStore } from '../lib/store';
 import moonImage from '../assets/moon-full.webp';
 
 /** Cloud outline in the 64×64 view box. */
 const CLOUD = 'M20 47h25a9.5 9.5 0 0 0 1.7-18.85A14 14 0 0 0 19.6 31.4 8 8 0 0 0 20 47z';
 
-/** Sun disc with eight rotating rays. */
-function Sun_({ cx, cy, r, scale = 1 }: { cx: number; cy: number; r: number; scale?: number }) {
+/** Freezing face: snow on the head, icicles, worried eyes and chattering teeth (sizes relative to the radius). */
+function FrozenFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+  const ink = '#1e3a5f';
+  const teeth = Array.from({ length: 6 }, (_, i) => `l${(r * 0.12).toFixed(2)} ${(i % 2 ? r * 0.1 : -r * 0.1).toFixed(2)}`).join('');
   return (
     <g>
-      <g className="wx-rays" style={{ transformOrigin: `${cx}px ${cy}px` }}>
+      {/* snow cap and frost highlight */}
+      <path d={`M${cx - r * 0.85} ${cy - r * 0.45}Q${cx - r * 0.2} ${cy - r * 1.25} ${cx + r * 0.85} ${cy - r * 0.45}Q${cx + r * 0.4} ${cy - r * 0.7} ${cx} ${cy - r * 0.62}Q${cx - r * 0.45} ${cy - r * 0.7} ${cx - r * 0.85} ${cy - r * 0.45}Z`} fill="#f8fafc" />
+      {/* icicles along the lower edge */}
+      {[[-0.5, 0.42], [-0.12, 0.62], [0.3, 0.5], [0.62, 0.32]].map(([dx, len]) => {
+        const x = cx + r * dx;
+        const y = cy + Math.sqrt(1 - dx * dx) * r - r * 0.12;
+        const w = r * 0.13;
+        return <path key={dx} d={`M${x - w} ${y}L${x + w} ${y}L${x} ${y + r * len}Z`} fill="#e0f2fe" stroke="#7dd3fc" strokeWidth={r * 0.03} strokeLinejoin="round" />;
+      })}
+      {/* eyebrows raised in the middle, eyes, blue cheeks */}
+      <path d={`M${cx - r * 0.52} ${cy - r * 0.22}L${cx - r * 0.2} ${cy - r * 0.34}M${cx + r * 0.52} ${cy - r * 0.22}L${cx + r * 0.2} ${cy - r * 0.34}`} stroke={ink} strokeWidth={r * 0.07} strokeLinecap="round" />
+      <circle cx={cx - r * 0.34} cy={cy - r * 0.06} r={r * 0.09} fill={ink} />
+      <circle cx={cx + r * 0.34} cy={cy - r * 0.06} r={r * 0.09} fill={ink} />
+      <circle cx={cx - r * 0.58} cy={cy + r * 0.2} r={r * 0.12} fill="#7dd3fc" opacity=".55" />
+      <circle cx={cx + r * 0.58} cy={cy + r * 0.2} r={r * 0.12} fill="#7dd3fc" opacity=".55" />
+      <path className="wx-chatter" d={`M${cx - r * 0.36} ${cy + r * 0.32}${teeth}`} fill="none" stroke={ink} strokeWidth={r * 0.07} strokeLinecap="round" strokeLinejoin="round" style={{ transformOrigin: `${cx}px ${cy + r * 0.32}px` }} />
+    </g>
+  );
+}
+
+/** Hot face: sunglasses with a shine, a relaxed smile and sweat drops running down. */
+function HotFace({ cx, cy, r }: { cx: number; cy: number; r: number }) {
+  const lens = (x: number) => `M${x - r * 0.32} ${cy - r * 0.24}H${x + r * 0.32}Q${x + r * 0.3} ${cy + r * 0.12} ${x} ${cy + r * 0.12}Q${x - r * 0.3} ${cy + r * 0.12} ${x - r * 0.32} ${cy - r * 0.24}Z`;
+  const drop = (x: number, y: number, s: number) => `M${x} ${y - s}Q${x + s * 0.75} ${y + s * 0.15} ${x} ${y + s * 0.7}Q${x - s * 0.75} ${y + s * 0.15} ${x} ${y - s}Z`;
+  return (
+    <g>
+      <path d={`M${cx - r * 0.95} ${cy - r * 0.2}L${cx - r * 0.66} ${cy - r * 0.22}M${cx + r * 0.95} ${cy - r * 0.2}L${cx + r * 0.66} ${cy - r * 0.22}M${cx - r * 0.06} ${cy - r * 0.2}Q${cx} ${cy - r * 0.27} ${cx + r * 0.06} ${cy - r * 0.2}`} stroke="#0f172a" strokeWidth={r * 0.08} strokeLinecap="round" fill="none" />
+      <path d={lens(cx - r * 0.36)} fill="#0f172a" />
+      <path d={lens(cx + r * 0.36)} fill="#0f172a" />
+      <path d={`M${cx - r * 0.56} ${cy - r * 0.14}l${r * 0.14} ${-r * 0.06}M${cx + r * 0.16} ${cy - r * 0.14}l${r * 0.14} ${-r * 0.06}`} stroke="#fff" strokeOpacity=".75" strokeWidth={r * 0.05} strokeLinecap="round" />
+      <path d={`M${cx - r * 0.3} ${cy + r * 0.38}Q${cx} ${cy + r * 0.62} ${cx + r * 0.3} ${cy + r * 0.38}`} stroke="#7c2d12" strokeWidth={r * 0.08} strokeLinecap="round" fill="none" />
+      <path d={drop(cx + r * 0.78, cy - r * 0.5, r * 0.2)} fill="#7dd3fc" stroke="#e0f2fe" strokeWidth={r * 0.03} className="wx-sweat" />
+      <path d={drop(cx - r * 0.82, cy - r * 0.05, r * 0.16)} fill="#7dd3fc" stroke="#e0f2fe" strokeWidth={r * 0.03} className="wx-sweat" style={{ animationDelay: '-1s' }} />
+    </g>
+  );
+}
+
+/** Sun disc with eight rays; `mood` turns it into a freezing (frozen rays, shivering) or a sweating sun. */
+function Sun_({ cx, cy, r, scale = 1, mood = 'mild' }: { cx: number; cy: number; r: number; scale?: number; mood?: SunMood }) {
+  const frost = mood === 'frost';
+  const heat = mood === 'heat';
+  return (
+    <g className={frost ? 'wx-shiver' : undefined}>
+      {/* frozen rays stand still */}
+      <g className={frost ? undefined : 'wx-rays'} style={{ transformOrigin: `${cx}px ${cy}px` }}>
         {Array.from({ length: 8 }, (_, i) => (
-          <line key={i} x1={cx} y1={cy - r - 4 * scale} x2={cx} y2={cy - r - 9 * scale} stroke="#fbbf24" strokeWidth={3 * scale} strokeLinecap="round" transform={`rotate(${i * 45} ${cx} ${cy})`} />
+          <line key={i} x1={cx} y1={cy - r - 4 * scale} x2={cx} y2={cy - r - (heat ? 10 : frost ? 7.5 : 9) * scale} stroke={frost ? '#bae6fd' : heat ? '#fb923c' : '#fbbf24'} strokeWidth={3 * scale} strokeLinecap="round" transform={`rotate(${i * 45} ${cx} ${cy})`} />
         ))}
       </g>
-      <circle cx={cx} cy={cy} r={r} fill="url(#wx-sun)" />
+      <circle cx={cx} cy={cy} r={r} fill={`url(#${frost ? 'wx-sun-frost' : heat ? 'wx-sun-heat' : 'wx-sun'})`} />
+      {frost && <FrozenFace cx={cx} cy={cy} r={r} />}
+      {heat && <HotFace cx={cx} cy={cy} r={r} />}
     </g>
   );
 }
@@ -113,12 +162,14 @@ function Gusts() {
 
 /**
  * Large animated symbol for a weather condition (day / night variants for clear, partly cloudy and
- * showers); `code` (WMO) and `wind` (km/h) add details like hail, icy drops and gusts.
+ * showers); `code` (WMO) and `wind` (km/h) add details like hail, icy drops and gusts. With the outside
+ * temperature `temp` (°C) the sun freezes from −5 °C downwards and sweats with sunglasses from 30 °C.
  */
-export function WeatherIcon({ kind, isDay = true, size = 96, code, wind }: { kind: Condition; isDay?: boolean; size?: number; code?: number | null; wind?: number | null }) {
+export function WeatherIcon({ kind, isDay = true, size = 96, code, wind, temp }: { kind: Condition; isDay?: boolean; size?: number; code?: number | null; wind?: number | null; temp?: number | null }) {
   const x = weatherExtras(code, wind);
+  const mood = sunMood(temp);
   // sun or moon behind the cloud of showers
-  const peek = x.showers && (isDay ? <Sun_ cx={44} cy={17} r={7} scale={0.6} /> : <Moon_ cx={44} cy={18} r={7.5} />);
+  const peek = x.showers && (isDay ? <Sun_ cx={44} cy={17} r={7} scale={0.6} mood={mood} /> : <Moon_ cx={44} cy={15} r={9} />);
   const drops = kind === 'rain' ? (x.heavy ? [20, 27, 34, 41, 48] : [24, 33, 42]) : [26, 36, 46];
   const dropColor = x.freezing ? '#a5f3fc' : '#38bdf8';
   return (
@@ -127,6 +178,16 @@ export function WeatherIcon({ kind, isDay = true, size = 96, code, wind }: { kin
         <radialGradient id="wx-sun" cx="35%" cy="30%" r="80%">
           <stop offset="0" stopColor="#fde68a" />
           <stop offset="1" stopColor="#f59e0b" />
+        </radialGradient>
+        <radialGradient id="wx-sun-frost" cx="35%" cy="30%" r="80%">
+          <stop offset="0" stopColor="#fef9c3" />
+          <stop offset=".55" stopColor="#fde68a" />
+          <stop offset="1" stopColor="#93c5fd" />
+        </radialGradient>
+        <radialGradient id="wx-sun-heat" cx="35%" cy="30%" r="80%">
+          <stop offset="0" stopColor="#fef08a" />
+          <stop offset=".55" stopColor="#fb923c" />
+          <stop offset="1" stopColor="#ef4444" />
         </radialGradient>
         <radialGradient id="wx-star-glow">
           <stop offset="0" stopColor="#f0f9ff" stopOpacity=".95" />
@@ -143,11 +204,12 @@ export function WeatherIcon({ kind, isDay = true, size = 96, code, wind }: { kin
         </linearGradient>
       </defs>
 
-      {kind === 'clear' && (isDay ? <Sun_ cx={32} cy={32} r={12} /> : <Moon_ cx={30} cy={32} r={13} />)}
+      {kind === 'clear' && (isDay ? <Sun_ cx={32} cy={32} r={12} mood={mood} /> : <Moon_ cx={30} cy={28} r={15.5} />)}
 
       {kind === 'partly' && (
         <>
-          {isDay ? <Sun_ cx={23} cy={24} r={8.5} scale={0.75} /> : <Moon_ cx={26} cy={22} r={11} />}
+          {/* with a face the sun peeks out further, so the cloud does not cover it */}
+          {isDay ? (mood === 'mild' ? <Sun_ cx={23} cy={24} r={8.5} scale={0.75} /> : <Sun_ cx={20} cy={19} r={9.5} scale={0.75} mood={mood} />) : <Moon_ cx={25} cy={18} r={13} />}
           <CloudShape dx={5} dy={4} />
         </>
       )}

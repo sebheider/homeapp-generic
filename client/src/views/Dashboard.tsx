@@ -15,9 +15,9 @@
  * in NexusDashboard.tsx, the freely designable start page ("Eigene") in CustomDashboard.tsx – its
  * widgets reuse the panels exported here.
  */
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { motion } from 'motion/react';
-import { Activity, AirVent, ArrowRight, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Camera, DoorClosed, DoorOpen, Droplets, Fan, Flame, LayoutGrid, Leaf, Lightbulb, Music, Power, Printer3d, Sun, Sunrise, Sunset, Thermometer, Trash2, Wind, Zap } from 'lucide-react';
+import { Activity, AirVent, ArrowRight, BatteryCharging, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Camera, CircleAlert, DoorClosed, DoorOpen, Droplets, Fan, Flame, LayoutGrid, Leaf, Lightbulb, Music, Power, Printer3d, Sun, Sunrise, Sunset, Thermometer, Trash2, TriangleAlert, Wind, Zap } from 'lucide-react';
 import { useStateValues, useStore, type View } from '../lib/store';
 import { HEATPUMP_IDLE_W, heatPumpRunning, heatPumpState, heatPumpWatts } from '../lib/heatpump';
 import { Icon, LawnMower } from '../lib/icons';
@@ -41,7 +41,7 @@ import { daysUntil, nextPickup, pickupText } from '../lib/waste';
 import { roomsToVentilate, ventilateText } from '../lib/ventilation';
 import { AreaChart, useHistory, type ChartSeries } from '../components/Charts';
 import { WeatherIcon } from '../components/WeatherIcon';
-import { particles, precipitation } from '../lib/ambience';
+import { particles, precipitation, temperatureLook } from '../lib/ambience';
 import { useNotifications } from '../components/Notifications';
 import { AnimatedNumber, ArcGauge, FitBox, HomeCore, HudPanel, LiquidGauge, SegmentRing, toneStyle } from '../components/Hud';
 import { Empty, Loading, OpenSettingsButton, Rise, Stagger } from '../components/ui';
@@ -120,7 +120,13 @@ export function StatusChips({ o, energy, max, strips = false }: { o: Overview; e
   const nextWaste = waste?.enabled ? nextPickup(waste.upcoming, new Date(now)) : null;
   const wasteIn = nextWaste ? daysUntil(nextWaste.date, new Date(now)) : Infinity;
   const airRooms = ventilation?.enabled ? roomsToVentilate(ventilation.rooms) : [];
-  const chips: { key: string; color: string; icon: ReactNode; text: string; view: View; room?: string | null; onClick?: () => void }[] = [];
+  const house = useHouseState();
+  const chips: { key: string; color: string; icon: ReactNode; text: string; view: View; room?: string | null; onClick?: () => void; alert?: boolean }[] = [];
+  // a pending alarm / warning comes first and pulses, so it is noticed next to the clock
+  if (house.alert) {
+    const text = `${house.label}: ${house.alert.name}${house.more ? ` +${house.more}` : ''}`;
+    chips.push({ key: 'alert', color: house.color, icon: house.state === 'alarm' ? <CircleAlert size={14} /> : <TriangleAlert size={14} />, text, view: 'home', onClick: () => showNotifications(true), alert: true });
+  }
   if (o.openContacts.length) {
     const names = o.openContacts.map((d) => d.name).slice(0, 2).join(', ');
     chips.push({ key: 'open', color: C.alert, icon: <DoorOpen size={13} />, text: `${names} offen`, view: 'rooms' });
@@ -152,9 +158,9 @@ export function StatusChips({ o, energy, max, strips = false }: { o: Overview; e
   return (
     <div className={`flex flex-wrap gap-2 ${max ? 'mt-3' : 'mt-4'}`}>
       {chips.slice(0, max).map((c) => (
-        <button key={c.key} className="hud-chip hover:brightness-125 transition" style={toneStyle(c.color)} onClick={c.onClick ?? (() => setView(c.view, c.room))}>
+        <button key={c.key} className={`hud-chip hover:brightness-125 transition ${c.alert ? `hud-chip-alert anim-ring ${house.state === 'alarm' ? 'is-alarm' : ''}` : ''}`} style={toneStyle(c.color)} onClick={c.onClick ?? (() => setView(c.view, c.room))}>
           {c.icon}
-          {c.text}
+          {c.alert ? <span className="truncate min-w-0">{c.text}</span> : c.text}
         </button>
       ))}
     </div>
@@ -194,6 +200,78 @@ function HeroUv({ web, large, detail = 0 }: { web: WeatherData; large: boolean; 
 }
 
 /**
+ * Positions (% of the value), sizes (em of the value) and delays of the ice crystals around a frosty temperature.
+ * `tight` stays close to the digits, for the kiosk hero and the widget: above them is little room (12 px padding).
+ */
+const CRYSTALS = {
+  spread: [
+    { x: -9, y: -16, size: 0.26, delay: 0 },
+    { x: 34, y: -24, size: 0.15, delay: -1.1 },
+    { x: 74, y: -12, size: 0.21, delay: -2.3 },
+    { x: -5, y: 70, size: 0.17, delay: -0.6 },
+    { x: 56, y: 84, size: 0.18, delay: -1.7 },
+  ],
+  tight: [
+    { x: -8, y: -6, size: 0.22, delay: 0 },
+    { x: 40, y: -8, size: 0.14, delay: -1.1 },
+    { x: 80, y: -4, size: 0.18, delay: -2.3 },
+    { x: -6, y: 68, size: 0.16, delay: -0.6 },
+    { x: 58, y: 80, size: 0.17, delay: -1.7 },
+  ],
+};
+
+/** Six-armed ice crystal. */
+function IceCrystal({ x, y, size, delay }: (typeof CRYSTALS.spread)[number]) {
+  return (
+    <svg className="temp-crystal" viewBox="-10 -10 20 20" style={{ left: `${x}%`, top: `${y}%`, width: `${size}em`, height: `${size}em`, animationDelay: `${delay}s` }} aria-hidden>
+      <g stroke="#e0f2fe" strokeWidth="1.4" strokeLinecap="round" fill="none">
+        {[0, 60, 120].map((a) => <path key={a} transform={`rotate(${a})`} d="M0-9V9M0-5.5l-2.6-2.6M0-5.5l2.6-2.6M0 5.5l-2.6 2.6M0 5.5l2.6 2.6" />)}
+      </g>
+    </svg>
+  );
+}
+
+/** Wavy lines of hot air rising through and above a hot temperature. */
+function HeatHaze() {
+  return (
+    <svg className="temp-haze" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden>
+      {[16, 44, 72, 96].map((x, i) => <path key={x} d={`M${x} 60q-5-7.5 0-15t0-15t0-15t0-15`} style={{ animationDelay: `${-i * 0.65}s` }} />)}
+    </svg>
+  );
+}
+
+/**
+ * Outside temperature of the hero: white fading into a colour along the scale (ice blue at 0 °C, cyan,
+ * green, yellow, orange towards 30 °C); below 0 °C ice blue with twinkling ice crystals, from 30 °C red with
+ * rising hot air and – on the highest effects level – a real heat shimmer (SVG displacement).
+ */
+function HeroTemp({ temp, unitClass, tight = false }: { temp: number | null; unitClass: string; tight?: boolean }) {
+  const look = temperatureLook(temp ?? 15);
+  const shimmer = useStore((s) => s.display.effects === 'high') && look.kind === 'heat';
+  const fid = `heat-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <span className={`hero-temp temp-${look.kind}`} style={{ ['--temp' as string]: look.color }}>
+      {look.kind === 'frost' && CRYSTALS[tight ? 'tight' : 'spread'].map((c) => <IceCrystal key={`${c.x}:${c.y}`} {...c} />)}
+      {look.kind === 'heat' && <HeatHaze />}
+      {shimmer && (
+        <svg width="0" height="0" className="absolute" aria-hidden>
+          <filter id={fid} x="-5%" y="-10%" width="110%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.09" numOctaves="1" seed="4">
+              <animate attributeName="baseFrequency" dur="2.6s" values="0.012 0.08;0.016 0.12;0.012 0.08" repeatCount="indefinite" />
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </svg>
+      )}
+      <span className="hero-temp-value" style={shimmer ? { filter: `url(#${fid}) drop-shadow(0 0 14px color-mix(in srgb, var(--temp) 65%, transparent))` } : undefined}>
+        {temp == null ? '–' : <AnimatedNumber value={temp} digits={1} />}
+      </span>
+      <span className={`temp-unit ${unitClass} font-semibold ml-1 align-top`}>°C</span>
+    </span>
+  );
+}
+
+/**
  * Outside conditions: local station first, internet forecast for everything else. `large`: kiosk hero;
  * `uv`: UV index with its forecast beside the sun times (standard overview).
  */
@@ -225,7 +303,7 @@ export function HeroWeather({ fallback, compact = false, large = false, uv = fal
   const web = data?.configured ? data : null;
   const cur = web?.current;
   const temp = local.temperature ?? cur?.temp ?? fallback;
-  const iconSize = large ? 112 : compact ? 68 : 88;
+  const iconSize = large ? 128 : compact ? 80 : 112;
   if (temp == null && !cur) return <div className="hidden lg:block" />;
   const cond = describeCode(cur?.code);
   const today = web?.daily[0];
@@ -233,20 +311,29 @@ export function HeroWeather({ fallback, compact = false, large = false, uv = fal
   const wind = local.windSpeed ?? cur?.wind ?? null;
   const detail = large ? 'text-base gap-x-4' : 'text-xs gap-x-3';
   const icon = large ? 16 : 12;
+  const tempSize = large ? 'text-[4.75rem]' : compact ? 'text-[2.6rem]' : 'text-6xl sm:text-7xl';
   return (
-    <button className={`flex items-center ${large ? 'gap-5' : 'gap-4'} text-left lg:justify-self-end ${uv ? 'min-w-0 max-w-full' : ''}`} style={toneStyle(cond.tone)} onClick={() => enabled && setView('weather')}>
-      {/* explicit size in rem: the zoom of the scaled kiosk does not count when the grid measures the content */}
-      {cur && <div className="shrink-0" style={{ width: `${iconSize / 16}rem`, height: `${iconSize / 16}rem` }}><WeatherIcon kind={cond.kind} isDay={cur.isDay} size={iconSize} code={cur.code} wind={wind} /></div>}
+    <button className={`block text-left lg:justify-self-end ${large ? 'mr-3' : compact ? '' : 'lg:mr-6'} ${uv ? 'min-w-0 max-w-full' : ''}`} style={toneStyle(cond.tone)} onClick={() => enabled && setView('weather')}>
+      {/* built like the clock beside it: big value first, then a quiet label line and the details */}
+      <div className={`flex items-start ${large ? 'gap-4' : 'gap-3'} ${tempSize} font-bold leading-none tracking-tight`}>
+        <HeroTemp temp={temp} unitClass={large ? 'text-3xl' : compact ? 'text-xl' : 'text-xl sm:text-2xl'} tight={large || compact} />
+        {/* the symbol sits right of the value, halfway between level with the value and centred on the "Außen" line
+            (1em = height of the value); it takes no room from the lines below.
+            Explicit width in rem: the zoom of the scaled kiosk does not count when the grid measures the content */}
+        {cur && (
+          <span className="relative shrink-0 self-stretch" style={{ width: `${iconSize / 16}rem` }}>
+            <span className="absolute left-0" style={{ top: `calc(0.5em + ${compact && !large ? 0.325 : 0.5125}rem - ${iconSize / 64}rem)` }}>
+              <WeatherIcon kind={cond.kind} isDay={cur.isDay} size={iconSize} code={cur.code} wind={wind} temp={temp} />
+            </span>
+          </span>
+        )}
+      </div>
       <div className="min-w-0">
-        <div ref={labelRow} className={`${large ? 'text-sm' : 'text-[0.68rem]'} text-muted flex items-center gap-3`}>
+        <div ref={labelRow} className={`${large ? 'text-sm mt-3' : compact ? 'text-[0.68rem] mt-2' : 'text-sm mt-3'} text-muted flex items-center gap-3`}>
           <span className="uppercase tracking-[0.22em]">Außen</span>
           {web && uv && uvStep >= 3 && uvStep < 6 && <HeroUv web={web} large={false} detail={uvStep - 3} />}
         </div>
-        <div className={`${large ? 'text-[4.25rem]' : compact ? 'text-[2.6rem]' : 'text-5xl'} font-bold leading-none hud-glow-text tracking-tight`}>
-          {temp == null ? '–' : <AnimatedNumber value={temp} digits={1} />}
-          <span className={`${large ? 'text-3xl' : 'text-xl'} text-muted font-semibold`}>°C</span>
-        </div>
-        {cur && <div className={`${large ? 'text-xl mt-2' : 'text-sm mt-1.5'} font-medium`}>{cond.label}</div>}
+        {cur && <div className={`${large ? 'text-xl mt-1' : compact ? 'text-sm mt-0.5' : 'text-lg sm:text-xl mt-0.5'} font-semibold`}>{cond.label}</div>}
         <div className={`${detail} text-muted mt-1 flex flex-wrap gap-y-1`}>
           {today?.tMax != null && today.tMin != null && <span>↑ {num(today.tMax, 0)}° ↓ {num(today.tMin, 0)}°</span>}
           {humidity != null && <span className="inline-flex items-center gap-1"><Droplets size={icon} /> {num(humidity, 0)} %</span>}
@@ -268,23 +355,28 @@ export function HeroWeather({ fallback, compact = false, large = false, uv = fal
   );
 }
 
-/** State of the house from the notifications: colour, label and number of messages. */
+/** Overall state of the house from the notifications. */
+export type HouseState = 'ok' | 'warning' | 'alarm';
+
+/** State of the house from the notifications: colour, label, number of messages and the most important alarm / warning. */
 export function useHouseState() {
   const { visible, open, top } = useNotifications();
-  const state = open.length || top === 'alarm' ? 'alarm' : top === 'warning' ? 'warning' : 'ok';
+  const state: HouseState = open.length || top === 'alarm' ? 'alarm' : top === 'warning' ? 'warning' : 'ok';
   const color = state === 'alarm' ? C.alert : state === 'warning' ? C.warm : C.cyan;
   const label = state === 'alarm' ? 'Alarm' : state === 'warning' ? 'Warnung' : 'System OK';
   const sub = visible.length ? `${visible.length} ${visible.length === 1 ? 'Meldung' : 'Meldungen'}` : 'Alles im grünen Bereich';
-  return { color, label, sub };
+  // what the alarm / warning is about (alarms waiting for acknowledgement first, see useNotifications)
+  const important = state === 'ok' ? [] : open.length ? open : visible.filter((a) => a.severity !== 'info');
+  return { state, color, label, sub, alert: important[0] ?? null, more: Math.max(0, important.length - 1) };
 }
 
 /** Home Core showing the state of the house; a click opens the notifications. */
 export function HouseCore({ size }: { size?: string }) {
-  const { color, label, sub } = useHouseState();
+  const { state, color, label, sub } = useHouseState();
   const show = useStore((s) => s.showNotifications);
   return (
-    <button className="justify-self-center rounded-full" onClick={() => show(true)} aria-label={`Hausstatus: ${label} – Benachrichtigungen öffnen`}>
-      <HomeCore color={color} label={label} sub={sub} size={size} />
+    <button className="justify-self-center self-center rounded-full" onClick={() => show(true)} aria-label={`Hausstatus: ${label} – Benachrichtigungen öffnen`}>
+      <HomeCore color={color} label={label} sub={sub} size={size} state={state} />
     </button>
   );
 }
@@ -310,13 +402,14 @@ function HeroPrecip() {
 }
 
 function HeroPanel({ o, energy, compact = false, portrait = false }: { o: Overview; energy: EnergyValues; compact?: boolean; portrait?: boolean }) {
-  const { color } = useHouseState();
+  const { state, color } = useHouseState();
+  const alert = state === 'ok' ? null : state;
   const today = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   if (portrait) {
     return (
-      <HudPanel color={color} edge>
+      <HudPanel color={color} alert={alert} edge>
         <HeroPrecip />
-        <div className="relative grid items-center gap-3 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="relative grid items-start gap-3 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <div className="min-w-0">
             <HeroClock large />
             <p className="text-base mt-2 leading-snug">
@@ -332,9 +425,10 @@ function HeroPanel({ o, energy, compact = false, portrait = false }: { o: Overvi
     );
   }
   return (
-    <HudPanel color={color} className={compact ? '' : 'sm:!p-6'} edge>
+    <HudPanel color={color} alert={alert} className={compact ? '' : 'sm:!p-6'} edge>
       <HeroPrecip />
-      <div className={`relative grid items-center ${compact ? 'gap-4 grid-cols-[1fr_auto_1fr]' : 'gap-6 lg:grid-cols-[1fr_auto_1fr]'}`}>
+      {/* clock and weather start at the same height; the Home Core stays in the middle */}
+      <div className={`relative grid items-start ${compact ? 'gap-4 grid-cols-[1fr_auto_1fr]' : 'gap-6 lg:grid-cols-[1fr_auto_1fr]'}`}>
         <div className="min-w-0">
           <HeroClock compact={compact} large={compact} />
           {compact ? (

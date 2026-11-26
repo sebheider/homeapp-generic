@@ -6,7 +6,7 @@
  */
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion, useSpring, useTransform } from 'motion/react';
-import { House } from 'lucide-react';
+import { House, Siren, TriangleAlert } from 'lucide-react';
 import { clamp, num } from '../lib/format';
 import { useElementSize } from '../lib/hooks';
 import { fitScale } from '../lib/fit';
@@ -43,21 +43,24 @@ const arcPath = (cx: number, cy: number, r: number, from: number, to: number) =>
 /**
  * Glass panel in HUD style: fine grid and glowing corner brackets; `edge` adds a light that runs
  * around the edge (only for the main panel of a page: every running light is a large GPU layer).
- * `color` is the accent of the panel.
+ * `color` is the accent of the panel; `alert` (state of the house) adds a pulsing wash and a glow so a
+ * warning or alarm catches the eye from across the room.
  */
 export function HudPanel({
-  title, color, right, children, className = '', bodyClassName = '', onClick, edge = false,
+  title, color, right, children, className = '', bodyClassName = '', onClick, edge = false, alert = null,
 }: {
   title?: ReactNode; color: string; right?: ReactNode; children: ReactNode; className?: string;
   edge?: boolean;
   /** Extra classes of the content area (e.g. flex layouts that fill the panel). */
   bodyClassName?: string;
   onClick?: () => void;
+  alert?: 'warning' | 'alarm' | null;
 }) {
   const scale = useContext(HudScale);
   const body = <div className={`relative ${bodyClassName}`}>{children}</div>;
   return (
-    <section className={`hud ${onClick ? 'hud-click' : ''} ${className}`} style={toneStyle(color)} onClick={onClick}>
+    <section className={`hud ${onClick ? 'hud-click' : ''} ${alert ? `hud-alert hud-alert-${alert}` : ''} ${className}`} style={toneStyle(color)} onClick={onClick}>
+      {alert && <span className="hud-alert-wash" aria-hidden />}
       {edge && <span className="hud-edge" aria-hidden />}
       {title && (
         <header className="hud-head">
@@ -369,14 +372,23 @@ export function SegmentRing({ on, total, color, label }: { on: number; total: nu
 /**
  * "Home Core": the eye-catcher in the middle of the overview. Rotating rings with ticks and arcs,
  * a radar sweep, orbiting satellites and a pulsing core with the house symbol. Its colour shows the
- * state of the house (OK / warning / alarm).
+ * state of the house (OK / warning / alarm); on a warning or alarm a warning symbol replaces the house,
+ * shock waves run outwards and the core pulses faster.
  */
-export function HomeCore({ color, label, sub, size = 'clamp(210px, 64vw, 290px)' }: { color: string; label: string; sub?: string; size?: string }) {
+export function HomeCore({ color, label, sub, size = 'clamp(210px, 64vw, 290px)', state = 'ok' }: { color: string; label: string; sub?: string; size?: string; state?: 'ok' | 'warning' | 'alarm' }) {
   const gid = useSvgId('core');
   const ticks = Array.from({ length: 72 }, (_, i) => i);
+  const alert = state !== 'ok';
+  const StateIcon = state === 'alarm' ? Siren : state === 'warning' ? TriangleAlert : House;
   return (
-    <div className="hud-core relative shrink-0 mx-auto" style={{ ...toneStyle(color), width: size, height: size }}>
+    <div className={`hud-core relative shrink-0 mx-auto ${alert ? `is-${state}` : ''}`} style={{ ...toneStyle(color), width: size, height: size }}>
       <div className="hud-core-sweep" aria-hidden />
+      {alert && (
+        <>
+          <span className="hud-core-shock" aria-hidden />
+          <span className="hud-core-shock" aria-hidden />
+        </>
+      )}
       <svg viewBox="0 0 260 260" className="absolute inset-0 w-full h-full overflow-visible" aria-hidden>
         <defs>
           <radialGradient id={gid}>
@@ -415,8 +427,8 @@ export function HomeCore({ color, label, sub, size = 'clamp(210px, 64vw, 290px)'
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center pointer-events-none">
         <div className="flex flex-col items-center leading-tight">
-          <House size={30} style={{ color, filter: `drop-shadow(0 0 8px ${color})` }} />
-          <div className="mt-1 text-[0.72rem] font-bold uppercase tracking-[0.18em]" style={{ color }}>{label}</div>
+          <StateIcon size={alert ? 32 : 30} className={state === 'alarm' ? 'anim-alarm' : ''} style={{ color, filter: `drop-shadow(0 0 ${alert ? 12 : 8}px ${color})` }} />
+          <div className={`mt-1 font-bold uppercase tracking-[0.18em] ${alert ? 'text-[0.85rem] hud-glow-text' : 'text-[0.72rem]'}`} style={{ color }}>{label}</div>
           {sub && <div className="text-[0.65rem] text-muted mt-0.5 max-w-[6.5rem]">{sub}</div>}
         </div>
       </div>

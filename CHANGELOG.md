@@ -3,6 +3,13 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.7.1] – 2026-11-26
+
+Kioskmodus: Eiskristalle der Temperatur werden nicht mehr abgeschnitten.
+
+### Behoben
+- Im Kioskmodus wurden die Eiskristalle der Temperatur unter 0 °C am oberen Rand des Panels abgeschnitten; dort liegen sie jetzt enger an den Ziffern.
+
 ## [2.7.0] – 2026-11-25
 
 Module: integrierte Funktionen abschalten, externe Module installieren – und Home Assistant als Datenquelle.
@@ -18,6 +25,10 @@ Module: integrierte Funktionen abschalten, externe Module installieren – und H
 ### Geändert
 - **`docker compose up -d --build` funktioniert direkt aus dem Repository:** Das `Dockerfile` installiert die npm-Pakete und baut das Frontend im Container (bisher `Dockerfile.full`); vorher muss nichts mehr erstellt werden – auch nicht für den Synology Container Manager. Die bisherige Variante ohne npm im Container heißt jetzt `Dockerfile.prebuilt` und ist nur noch für ältere Docker-Versionen gedacht, bei denen `npm ci` mit „Exit handler never called!“ abbricht.
 - Der (leere) Ordner `data/` ist im Repository enthalten, weil der Synology Container Manager den Datenordner nicht selbst anlegt. `HOMEAPP_PORT` in der `.env` gilt jetzt für alle Compose-Dateien. README und Compose-Dateien beschreiben, welche Werte (Port, Containername, Netzwerk, Image, Projektordner) bei mehreren Installationen auf einem Host anzupassen sind.
+- Der Mond im Wettersymbol ist rund 20 % größer und sitzt etwas höher; auf der Wetterseite ist das Wettersymbol deutlich größer (160 statt 112 Pixel, auf Handys 124 Pixel).
+- **Übersicht:** Das Wetter ist an die Uhr angeglichen – gleiche Höhe, Temperatur so groß wie die Uhrzeit, darunter wie bei der Uhr eine ruhige Zeile „Außen“, die Wetterlage und die Details. Das Wettersymbol ist größer (112 statt 88 Pixel, im Kioskmodus 128 statt 112) und steht rechts neben der Temperatur, etwas nach unten in Richtung der Zeile „Außen“ versetzt; der Wetterblock ist dafür vom rechten Rand eingerückt.
+- **Temperatur mit Effekt (Übersicht):** Verlauf von Weiß in eine Farbe passend zur Temperatur (Eisblau bei 0 °C über Cyan, Grün und Gelb bis Orange bei 30 °C); unter 0 °C eisblau mit funkelnden Eiskristallen, ab 30 °C rot mit aufsteigender heißer Luft und Hitzeflimmern (echtes Flimmern nur mit Animationsstufe „Hoch“, sonst ohne Bewegung).
+- **Warnungen und Alarme sind auf der Übersicht deutlich auffälliger:** leuchtender Rahmen und pulsierende Fläche in Orange bzw. Rot über dem oberen Panel (bei Alarm schneller und mit Warnstreifen), Warndreieck bzw. Sirene mit Schockwellen im Home Core und ein pulsierender Chip mit dem Namen der Meldung neben der Uhr; ebenso im Widget „Hausstatus“. Mit der Animationsstufe „Niedrig“ bleibt die Färbung ohne Bewegung.
 
 ### Sicherheit
 - Ändernde API-Anfragen und WebSocket-Verbindungen von abgeschotteten Seiten (`Origin: null`) und fremden Websites (`Sec-Fetch-Site: cross-site`) werden abgelehnt.

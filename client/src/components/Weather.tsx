@@ -13,6 +13,7 @@ import { useMemo, type ReactNode } from 'react';
 import { ArrowDown, ArrowUp, CloudSun, Droplets, Gauge, MapPin, RefreshCw, Sun, Sunrise, Sunset, Thermometer, Umbrella, Wind } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { useNow } from '../lib/hooks';
+import { useMedia } from '../lib/display';
 import { num, numOrDash, clamp } from '../lib/format';
 import { compass, describeCode, fmtDuration, fmtTime, useLocalWeather, useWeatherData, uvChartHours, uvLevel, windWord, type LocalWeather } from '../lib/weather';
 import type { WeatherData } from '../lib/api';
@@ -181,13 +182,15 @@ function Hero({ web, local, nowSec, name }: { web: WeatherData | null; local: Lo
   const tz = web?.timezone ?? 'UTC';
   const temp = pick(local.temperature, cur?.temp);
   const feels = pick(local.feelsLike, cur?.feelsLike);
+  // the symbol is the eye-catcher of the page; on phones it stays small enough to fit next to the temperature
+  const iconSize = useMedia('(min-width: 40rem)') ? 160 : 124;
 
   return (
     <div className="glass tone-cool relative overflow-hidden p-4 sm:p-6 h-full flex flex-col gap-5" style={{ ['--tone' as string]: cond.tone }}>
       <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
         <div className="flex items-center gap-4 sm:gap-5">
           <div>
-            <WeatherIcon kind={web ? cond.kind : 'partly'} isDay={isDay} size={112} code={cur?.code} wind={local.windSpeed ?? cur?.wind} />
+            <WeatherIcon kind={web ? cond.kind : 'partly'} isDay={isDay} size={iconSize} code={cur?.code} wind={local.windSpeed ?? cur?.wind} temp={temp.v} />
           </div>
           <div>
             {name && <div className="text-xs text-muted flex items-center gap-1 mb-0.5"><MapPin size={12} />{name}</div>}

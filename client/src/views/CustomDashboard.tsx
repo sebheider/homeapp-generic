@@ -115,9 +115,9 @@ function ClockWidget({ o, energy, chips }: { o: Overview; energy: EnergyValues; 
 }
 
 function StatusWidget() {
-  const { color } = useHouseState();
+  const { state, color } = useHouseState();
   return (
-    <HudPanel color={color} bodyClassName="cdash-fit grid place-items-center">
+    <HudPanel color={color} alert={state === 'ok' ? null : state} bodyClassName="cdash-fit grid place-items-center">
       <HouseCore size="min(100cqw, 100cqh, 18.125rem)" />
     </HudPanel>
   );

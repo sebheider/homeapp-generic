@@ -338,7 +338,7 @@ function Atmosphere({ weather, fallback, compact, children }: { weather: Weather
   return (
     <Panel title="Atmosphäre" right={hourly.length >= 4 ? 'NÄCHSTE 12 H' : undefined} to="weather">
       <button className="nx-wx" onClick={() => setView('weather')}>
-        {cur ? <WeatherIcon kind={cond.kind} isDay={cur.isDay} size={74} code={cur.code} wind={local.windSpeed ?? cur.wind} /> : <span />}
+        {cur ? <WeatherIcon kind={cond.kind} isDay={cur.isDay} size={74} code={cur.code} wind={local.windSpeed ?? cur.wind} temp={temp} /> : <span />}
         <span className="min-w-0">
           <span className="t block">{temp == null ? '–' : num(temp, 1)}<small>°C</small></span>
           {cur && <span className="d block">{cond.label}{cur.feelsLike != null ? ` · gefühlt ${num(cur.feelsLike, 0)}°` : ''}</span>}
