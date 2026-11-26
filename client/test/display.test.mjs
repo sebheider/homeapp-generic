@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_DISPLAY, dashboardDesign, effectsLevel, inTimeWindow, kioskScale, launcherColumns, navShell, kioskZoom, menuMode, menuModeSettings, nextMenuMode, screenHint, screensaverSpot } from '../src/lib/display.ts';
+import { DEFAULT_DISPLAY, dashboardDesign, effectsLevel, inTimeWindow, kioskScale, launcherColumns, loadDisplay, navShell, kioskZoom, menuMode, menuModeSettings, nextMenuMode, saveDisplay, screenHint, screensaverSpot } from '../src/lib/display.ts';
 
 test('the screensaver is off by default and runs at night with a clock', () => {
   assert.equal(DEFAULT_DISPLAY.screensaver, false);
@@ -22,6 +22,30 @@ test('the screensaver clock stays away from the edges and wanders from minute to
 
 test('animation details default to all effects', () => {
   assert.equal(DEFAULT_DISPLAY.effects, 'high');
+});
+
+test('hero weather effects default on and individual choices persist on this device', () => {
+  const keys = ['heroWeatherRain', 'heroWeatherSnow', 'heroWeatherThunder', 'heroWeatherFog'];
+  const oldStorage = globalThis.localStorage;
+  const oldLocation = globalThis.location;
+  let saved = JSON.stringify({ effects: 'high' });
+  globalThis.localStorage = { getItem: () => saved, setItem: (_key, value) => { saved = value; } };
+  globalThis.location = { search: '' };
+  try {
+    let display = loadDisplay();
+    for (const key of keys) assert.equal(display[key], true);
+    for (const key of keys) {
+      display = { ...display, [key]: false };
+      saveDisplay(display);
+      assert.equal(loadDisplay()[key], false);
+    }
+    assert.ok(keys.every((key) => loadDisplay()[key] === false));
+  } finally {
+    if (oldStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = oldStorage;
+    if (oldLocation === undefined) delete globalThis.location;
+    else globalThis.location = oldLocation;
+  }
 });
 
 test('known animation detail levels are kept, anything else means all effects', () => {

@@ -86,6 +86,11 @@ export interface DisplaySettings {
   kioskZoom: number;
   /** Animation details: how many graphical effects this device shows. */
   effects: EffectsLevel;
+  /** Individually enabled weather effects in the standard overview hero. */
+  heroWeatherRain: boolean;
+  heroWeatherSnow: boolean;
+  heroWeatherThunder: boolean;
+  heroWeatherFog: boolean;
   /** Darken the screen between `nightFrom` and `nightTo` ("HH:MM"). */
   nightDim: boolean;
   nightFrom: string;
@@ -121,6 +126,10 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
   kioskReduceEffects: false,
   kioskZoom: 0,
   effects: 'high',
+  heroWeatherRain: true,
+  heroWeatherSnow: true,
+  heroWeatherThunder: true,
+  heroWeatherFog: true,
   nightDim: false,
   nightFrom: '22:00',
   nightTo: '06:00',

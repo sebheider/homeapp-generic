@@ -3,6 +3,20 @@
 Alle nennenswerten Änderungen an diesem Projekt. Das Format orientiert sich an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung an [SemVer](https://semver.org/lang/de/).
 
+## [2.8.0] – 2026-11-26
+
+Wetteranimationen für die Übersicht.
+
+### Hinzugefügt
+- Bei Gewitter erscheinen Regen und gelegentliche Blitze, bei Nebel ziehen Nebelbänder durch den Hero-Bereich der Standard-Übersicht.
+- Unter *Einstellungen → Anzeige & Bedienung* lassen sich die Hero-Animationen für Regen, Schnee, Gewitter und Nebel einzeln pro Browser ausschalten. Sie erscheinen nur bei Animationsdetails „Hoch“.
+
+### Geändert
+- Die Schneeanimation zeigt unterschiedlich große, leuchtende Flocken.
+
+### Sicherheit
+- Enthält das Sicherheitsupdate von `body-parser` auf 1.20.9 aus Version 2.7.3.
+
 ## [2.7.3] – 2026-11-26
 
 Sicherheitsupdate der Server-Abhängigkeiten.

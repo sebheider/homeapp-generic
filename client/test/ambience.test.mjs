@@ -27,12 +27,15 @@ test('daypart: fixed hours without (valid) sun times', () => {
   assert.equal(daypart(at(12), sec(at(20)), sec(at(6))), 'day');
 });
 
-test('precipitation: rain, snow or dry', () => {
+test('hero weather: rain, snow, thunder, fog or no effect', () => {
   assert.equal(precipitation('rain'), 'rain');
   assert.equal(precipitation('drizzle'), 'rain');
-  assert.equal(precipitation('thunder'), 'rain');
+  assert.equal(precipitation('thunder'), 'thunder');
   assert.equal(precipitation('snow'), 'snow');
+  assert.equal(precipitation('fog'), 'fog');
   assert.equal(precipitation('clear'), null);
+  assert.equal(precipitation('partly'), null);
+  assert.equal(precipitation('cloudy'), null);
   assert.equal(precipitation(undefined), null);
 });
 

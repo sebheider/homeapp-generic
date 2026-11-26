@@ -1,4 +1,4 @@
-/** Top panel of the overview: clock and status chips | Home Core | weather, with falling rain or snow. */
+/** Top panel of the overview: clock and status chips | Home Core | weather, with animated weather effects. */
 import { useStore } from '../../lib/store';
 import { greeting } from '../../lib/format';
 import { describeCode, useWeatherData } from '../../lib/weather';
@@ -12,17 +12,39 @@ import { StatusChips } from './StatusChips';
 import { HeroWeather } from './HeroWeather';
 import { useHouseState, HouseCore } from './HouseCore';
 
-/** Rain or snow falling through the hero panel while it rains or snows outside (effects level 'high' only). */
+/** Animated weather effects through the hero panel (effects level 'high' only). */
 function HeroPrecip() {
   const high = useStore((s) => s.display.effects === 'high');
+  const settings = useStore((s) => s.display);
   const w = useWeatherData().data;
   const code = w?.configured ? w.current.code : undefined;
   const kind = precipitation(describeCode(code).kind);
   if (!high || !kind) return null;
+  if (kind === 'rain' && !settings.heroWeatherRain) return null;
+  if (kind === 'snow' && !settings.heroWeatherSnow) return null;
+  if (kind === 'thunder' && !settings.heroWeatherThunder) return null;
+  if (kind === 'fog' && !settings.heroWeatherFog) return null;
+  if (kind === 'fog') {
+    return (
+      <div className="hero-precip fog" aria-hidden>
+        {Array.from({ length: 7 }, (_, i) => <i key={i} style={{ top: `${18 + i * 11}%`, animationDelay: `${-i * 2.3}s`, animationDuration: `${18 + (i % 3) * 4}s` }} />)}
+      </div>
+    );
+  }
+  if (kind === 'thunder') {
+    return (
+      <div className="hero-precip thunder" aria-hidden>
+        {particles(18, 'rain').map((p, i) => (
+          <i key={i} className="hero-rain-drop" style={{ left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s` }} />
+        ))}
+        <b className="hero-lightning" />
+      </div>
+    );
+  }
   return (
     <div className={`hero-precip ${kind}`} aria-hidden>
-      {particles(kind === 'rain' ? 26 : 18, kind).map((p, i) => (
-        <i key={i} style={{ left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s` }} />
+      {particles(kind === 'rain' ? 26 : 28, kind).map((p, i) => (
+        <i key={i} className={kind === 'snow' ? `snowflake snowflake-${i % 3}` : undefined} style={{ left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s` }} />
       ))}
     </div>
   );

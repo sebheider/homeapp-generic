@@ -31,13 +31,70 @@
 @media (prefers-reduced-motion: reduce) {
   .wx-rays, .wx-drift, .wx-bob, .wx-fall, .wx-snow, .wx-flash, .wx-slide, .wx-sparkle, .wx-ping, .wx-hail, .wx-gust, .wx-shiver, .wx-chatter, .wx-sweat { animation: none; }
 }
-/* rain or snow falling through the hero panel (only on effects level 'high', see HeroPrecip) */
+/* Weather effects through the hero panel (only on effects level 'high', see HeroPrecip). */
 .hero-precip { position: absolute; inset: -2rem; overflow: hidden; pointer-events: none; z-index: 0; }
 .hero-precip i { position: absolute; top: 0; will-change: transform; animation: precip-fall linear infinite; }
-.hero-precip.rain i { width: 1.5px; height: 1.3rem; background: linear-gradient(transparent, color-mix(in srgb, #7dd3fc 70%, transparent)); }
-.hero-precip.snow i { width: .3rem; height: .3rem; border-radius: 50%; background: rgba(241, 245, 249, .55); animation-name: precip-snow; }
+.hero-precip.rain i,
+.hero-precip.thunder .hero-rain-drop { width: 1.5px; height: 1.3rem; background: linear-gradient(transparent, color-mix(in srgb, #7dd3fc 70%, transparent)); }
+.hero-precip.snow i {
+  width: .42rem; height: .42rem; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 22%, #dbeafe 42%, transparent 48%);
+  box-shadow: 0 0 7px rgba(224, 242, 254, .75);
+  animation-name: precip-snow;
+}
+.hero-precip.snow .snowflake-1 { width: .62rem; height: .62rem; opacity: .8; }
+.hero-precip.snow .snowflake-1::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 42%, #fff 43% 57%, transparent 58%), linear-gradient(transparent 42%, #fff 43% 57%, transparent 58%);
+  transform: rotate(45deg); filter: drop-shadow(0 0 2px #bae6fd);
+}
+.hero-precip.snow .snowflake-2 { width: .28rem; height: .28rem; opacity: .55; }
 @keyframes precip-fall { from { transform: translate3d(0, -2rem, 0) rotate(12deg); } to { transform: translate3d(-3rem, 26rem, 0) rotate(12deg); } }
 @keyframes precip-snow { from { transform: translate3d(0, -1rem, 0); } 50% { transform: translate3d(1.2rem, 12rem, 0); } to { transform: translate3d(-.6rem, 25rem, 0); } }
+.hero-precip.fog i {
+  left: -35%; width: 170%; height: 4.5rem; border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(226, 232, 240, .24) 20%, rgba(226, 232, 240, .48) 50%, rgba(226, 232, 240, .24) 80%, transparent);
+  filter: blur(9px); animation: hero-fog 14s ease-in-out infinite alternate;
+}
+@keyframes hero-fog {
+  from { transform: translate3d(-12%, 0, 0) scaleX(.9); opacity: .55; }
+  to { transform: translate3d(14%, 2.5rem, 0) scaleX(1.08); opacity: .95; }
+}
+.hero-precip.thunder { background: linear-gradient(180deg, transparent 68%, rgba(15, 23, 42, .12)); }
+.hero-precip.thunder::before {
+  content: ''; position: absolute; z-index: 3; inset: 0; pointer-events: none;
+  background: rgba(221, 214, 254, .7);
+  opacity: 0; animation: hero-flash 7.2s linear infinite;
+}
+@keyframes hero-flash {
+  0%, 70%, 73%, 76%, 79%, 82%, 100% { opacity: 0; }
+  71% { opacity: .22; }
+  72% { opacity: .02; }
+  74% { opacity: .14; }
+  75% { opacity: .04; }
+  77% { opacity: .1; }
+  78% { opacity: 0; }
+}
+.hero-lightning {
+  position: absolute; z-index: 4; width: 6rem; height: 10rem; left: 50%; top: 10%; opacity: 0;
+  margin-left: -3rem;
+  background: linear-gradient(135deg, #fff, #dbeafe 55%, #a78bfa);
+  clip-path: polygon(48% 0, 78% 0, 57% 34%, 84% 34%, 28% 100%, 43% 49%, 18% 49%);
+  filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 16px #c4b5fd) drop-shadow(0 0 32px #7c3aed);
+  animation: hero-lightning 7.2s linear infinite;
+}
+@keyframes hero-lightning {
+  0%, 70%, 73%, 76%, 79%, 82%, 100% { opacity: 0; }
+  71% { opacity: 1; transform: translateX(-3px) scaleY(1.08); }
+  72% { opacity: .08; }
+  74% { opacity: .9; transform: translateX(3px) scaleY(1); }
+  75% { opacity: .18; }
+  77% { opacity: .65; }
+  78% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-precip { display: none; }
+}
 /* UV forecast of the hero weather (views/dashboard/HeroWeather.tsx `HeroUv`): one thin bar per hour, as high as the text line */
 .hero-uv-bars { display: inline-flex; align-items: flex-end; gap: 1px; height: .95em; }
 .hero-uv-bars i { width: 3px; border-radius: 1px 1px 0 0; }
